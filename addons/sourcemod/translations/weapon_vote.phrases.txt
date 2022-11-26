@@ -1,0 +1,35 @@
+"Phrases"
+{
+	"ONLY_SURVIVOR"
+	{
+		"en"			"The team is only available to {olive}survivors"
+	}
+
+	"LEFT_READYUP"
+	{
+		"en"			"Vote didnot pass before you left ready-up"
+	}
+
+	"COULDOWN"
+	{
+		"#format"		"{1:d}"
+		"en"			"A vote cannot be called at this moment, try again in a  {olive}{1} second"
+	}
+
+	"ROUND_LIVE"
+	{
+		"en"			"The round has already begun"
+	}
+
+	"VOTE_TITLE"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{1} get {2}"
+	}
+
+	"VOTE_PASS"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{1} set {2}"
+	}
+}
