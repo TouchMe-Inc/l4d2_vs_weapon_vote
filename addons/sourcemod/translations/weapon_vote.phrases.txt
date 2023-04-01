@@ -10,7 +10,7 @@
 		"en"			"Vote didnot pass before you left ready-up"
 	}
 
-	"COULDOWN"
+	"VOTE_COULDOWN"
 	{
 		"#format"		"{1:d}"
 		"en"			"A vote cannot be called at this moment, try again in a {olive}{1} second"
