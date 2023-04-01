@@ -24,7 +24,7 @@
 	"VOTE_START"
 	{
 		"#format"		"{1:N},{2:s}"
-		"en"			"Началось голосование за получение {olive}{1} {default}игроком {olive}{2}"
+		"ru"			"Началось голосование за получение {olive}{1} {default}игроком {olive}{2}"
 	}
 
 	"VOTE_TITLE"
