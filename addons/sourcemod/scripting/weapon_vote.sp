@@ -8,7 +8,7 @@
 
 #undef REQUIRE_PLUGIN
 #include <readyup>
-#define LIB_READY              "readyup"
+#define REQUIRE_PLUGIN
 
 
 public Plugin myinfo =
@@ -16,9 +16,11 @@ public Plugin myinfo =
 	name = "Weapon vote",
 	author = "TouchMe",
 	description = "Issues weapons based on voting results",
-	version = "1.0"
+	version = "1.1"
 };
 
+
+#define LIB_READY              "readyup"
 
 #define TRANSLATIONS            "weapon_vote.phrases"
 #define CONFIG_FILEPATH         "configs/weapon_vote.ini"
@@ -30,6 +32,7 @@ public Plugin myinfo =
 #define VOTE_TIME               15
 
 #define MENU_TITLE_SIZE         64
+#define VOTE_TITLE_SIZE         128
 #define VOTE_MSG_SIZE           128
 
 #define WEAPON_NAME_SIZE        32
@@ -144,30 +147,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 }
 
 /**
- * Called when the plugin is fully initialized and all known external references are resolved.
- * 
- * @noreturn
- */
-public void OnPluginStart()
-{
-	g_hWeaponVoteList.Create();
-
-	InitTranslations();
-	ReadWeaponVoteList();
-	InitEvents();
-}
-
-/**
- * Called when the plugin is about to be unloaded.
- * 
- * @noreturn
- */
-public void OnPluginEnd()
-{
-	g_hWeaponVoteList.Close();
-}
-
-/**
   * Loads dictionary files. On failure, stops the plugin execution.
   *
   * @noreturn
@@ -185,6 +164,42 @@ void InitTranslations()
 }
 
 /**
+  * Called when the map starts loading.
+  *
+  * @noreturn
+  */
+public void OnMapInit(const char[] sMapName) {
+	g_bRoundIsLive = false;
+}
+
+/**
+ * Called when the plugin is fully initialized and all known external references are resolved.
+ * 
+ * @noreturn
+ */
+public void OnPluginStart()
+{
+	InitTranslations();
+	
+	g_hWeaponVoteList.Create();
+
+	ReadWeaponVoteList();
+	
+	HookEvent("versus_round_start", Event_RoundStart, EventHookMode_PostNoCopy);
+	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
+}
+
+/**
+ * Called when the plugin is about to be unloaded.
+ * 
+ * @noreturn
+ */
+public void OnPluginEnd()
+{
+	g_hWeaponVoteList.Close();
+}
+
+/**
   * File reader. Opens and reads lines in config/weapon_vote.ini.
   *
   * @noreturn
@@ -198,15 +213,15 @@ void ReadWeaponVoteList()
 		SetFailState("Path %s not found", sPath);
 	}
 
-	File file = OpenFile(sPath, "rt");
-	if (!file) {
+	File hFile = OpenFile(sPath, "rt");
+	if (!hFile) {
 		SetFailState("Could not open file!");
 	}
 	
-	while (!file.EndOfFile())
+	while (!hFile.EndOfFile())
 	{
 		char sCurLine[255];
-		if (!file.ReadLine(sCurLine, sizeof(sCurLine))) {
+		if (!hFile.ReadLine(sCurLine, sizeof(sCurLine))) {
 			break;
 		}
 		
@@ -230,13 +245,13 @@ void ReadWeaponVoteList()
 		ParseLine(sCurLine);
 	}
 	
-	file.Close();
+	hFile.Close();
 }
 
 /**
   * File line parser.
   *
-  * @param sLine             Line. Pattern:
+  * @param sLine 			Line. Pattern:
   *                                        "weapon_*" "*" "sm_*"
   *
   * @noreturn
@@ -274,40 +289,21 @@ void ParseLine(const char[] sLine)
 }
 
 /**
- * Fragment.
- * 
- * @noreturn
+ * Round start event.
  */
-void InitEvents()
-{
-	HookEvent("player_left_start_area", Event_LeftStartArea, EventHookMode_PostNoCopy);
-	HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
-}
-
-/**
-  * Out of safe zone event.
-  *
-  * @params                 see events.inc > HookEvent.
-  *
-  * @noreturn
-  */
-public Action Event_LeftStartArea(Event event, const char[] name, bool dontBroadcast)
+public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!g_bReadyUpAvailable) {
 		g_bRoundIsLive = true;
-	}	
+	}
 
 	return Plugin_Continue;
 }
 
 /**
-  * Round start event.
-  *
-  * @params                 see events.inc > HookEvent.
-  *
-  * @noreturn
-  */
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+ * Round end event.
+ */
+public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
 	if (!g_bReadyUpAvailable) {
 		g_bRoundIsLive = false;
@@ -319,30 +315,27 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 /**
   * Global listener for the chat commands.
   *
-  * @param iClient          Client index.
-  * @param sArgs            Chat argument string.
+  * @param iClient			Client index.
+  * @param sArgs			Chat argument string.
   *
   * @return Plugin_Handled | Plugin_Continue
   */
 public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[] sArgs)
 {
-	if (iClient && !IsFakeClient(iClient))
-    {
-		char sClearCmd[WEAPON_CMD_SIZE];
-		strcopy(sClearCmd, sizeof(sClearCmd), sArgs[1]);
+	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
+		return Plugin_Handled;
+	}
+		
+	char sClearCmd[WEAPON_CMD_SIZE];
+	strcopy(sClearCmd, sizeof(sClearCmd), sArgs[1]);
 
-		if ((sArgs[0] == '/' || sArgs[0] == '!'))
-		{
-			int iItem;
+	if ((sArgs[0] == '/' || sArgs[0] == '!'))
+	{
+		int iItem;
 
-			if (g_hWeaponVoteList.cmd.GetValue(sClearCmd, iItem)) 
-			{
-				if (CanClientStartVote(iClient)) {
-					StartVote(iClient, iItem);
-				}
-
-				return Plugin_Handled;
-			}
+		if (g_hWeaponVoteList.cmd.GetValue(sClearCmd, iItem) 
+		&& CanClientStartVote(iClient)) {
+			StartVote(iClient, iItem);
 		}
     }
 
@@ -352,29 +345,26 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 /**
   * Called when a client is sending a command.
   *
-  * @param iClient          Client index.
-  * @param iArgs            Number of arguments.
+  * @param iClient			Client index.
+  * @param iArgs			Number of arguments.
   *
   * @return Plugin_Handled | Plugin_Continue
   */
 public Action OnClientCommand(int iClient, int sArgs)
 {
-	if (iClient && !IsFakeClient(iClient))
-    {
-		char sArgCmd[WEAPON_CMD_SIZE];
-  		GetCmdArg(0, sArgCmd, sizeof(sArgCmd));
-		strcopy(sArgCmd, sizeof(sArgCmd), sArgCmd[3]);
+	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
+		return Plugin_Handled;
+	}
 
-		int iItem;
+	char sArgCmd[WEAPON_CMD_SIZE];
+  	GetCmdArg(0, sArgCmd, sizeof(sArgCmd));
+	strcopy(sArgCmd, sizeof(sArgCmd), sArgCmd[3]);
 
-		if (g_hWeaponVoteList.cmd.GetValue(sArgCmd, iItem)) 
-		{
-			if (CanClientStartVote(iClient)) {
-				StartVote(iClient, iItem);
-			}
+	int iItem;
 
-			return Plugin_Handled;
-		}
+	if (g_hWeaponVoteList.cmd.GetValue(sArgCmd, iItem) 
+	&& CanClientStartVote(iClient)) {
+		StartVote(iClient, iItem);
     }
 
 	return Plugin_Continue;
@@ -422,7 +412,7 @@ public bool StartVote(int iClient, int iItem)
 	g_iVotingItem = iItem;
 
 	// Create vote
-	NativeVote hVote = new NativeVote(YesNoCustomHandler, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
+	NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
 	
 	hVote.Initiator = iClient;
 	hVote.Team = VOTE_TEAM;
@@ -440,7 +430,7 @@ public bool StartVote(int iClient, int iItem)
   *
   * @noreturn
   */
-public int YesNoCustomHandler(NativeVote hVote, MenuAction iAction, int iParam1, int iParam2)
+public int HandlerVote(NativeVote hVote, MenuAction iAction, int iParam1, int iParam2)
 {
 	switch (iAction)
 	{
@@ -458,7 +448,7 @@ public int YesNoCustomHandler(NativeVote hVote, MenuAction iAction, int iParam1,
 			char sWeaponTitle[WEAPON_TITLE_SIZE];
 			g_hWeaponVoteList.title.GetString(g_iVotingItem, sWeaponTitle, sizeof(sWeaponTitle));
 
-			char sVoteTitle[VOTE_MSG_SIZE];
+			char sVoteTitle[VOTE_TITLE_SIZE];
 			Format(sVoteTitle, sizeof(sVoteTitle), "%T", "VOTE_TITLE", iParam1, hVote.Initiator, sWeaponTitle);
 
 			NativeVotes_RedrawVoteTitle(sVoteTitle);
@@ -480,8 +470,8 @@ public int YesNoCustomHandler(NativeVote hVote, MenuAction iAction, int iParam1,
 		case MenuAction_VoteEnd:
 		{
 			if (iParam1 == NATIVEVOTES_VOTE_NO 
-				|| g_bRoundIsLive 
-				|| g_bReadyUpAvailable && !IsInReady() 
+				|| (!g_bReadyUpAvailable && g_bRoundIsLive)
+				|| (g_bReadyUpAvailable && !IsInReady())
 				|| !IsClientInGame(hVote.Initiator)) {
 				hVote.DisplayFail(NativeVotesFail_Loses);
 			}
@@ -518,9 +508,9 @@ public int YesNoCustomHandler(NativeVote hVote, MenuAction iAction, int iParam1,
 }
 
 /**
-  * @param iClient			Client index.
+  * @param iClient          Client ID
   *
-  * @return 				true or false.
+  * @return                 true if succes
   */
 bool CanClientStartVote(int iClient)
 {
@@ -536,7 +526,7 @@ bool CanClientStartVote(int iClient)
 		return false;
 	} 
 	
-	else if (g_bRoundIsLive)
+	if (!g_bReadyUpAvailable && g_bRoundIsLive)
 	{
 		CPrintToChat(iClient, "%T", "ROUND_LIVE", iClient);
 		return false;
