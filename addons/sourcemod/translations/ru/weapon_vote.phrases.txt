@@ -10,7 +10,7 @@
 		"ru"			"Доступно {olive}только во время ReadyUp"
 	}
 
-	"COULDOWN"
+	"VOTE_COULDOWN"
 	{
 		"#format"		"{1:d}"
 		"ru"			"Сейчас голосование недоступно. Подождите {olive}{1} сек"
@@ -24,7 +24,7 @@
 	"VOTE_START"
 	{
 		"#format"		"{1:N},{2:s}"
-		"ru"			"Началось голосование за получение {olive}{2} {default}игроком {olive}{1}"
+		"ru"			"Игрок {olive}{1} {default}начал голосование за получение {olive}{2}"
 	}
 
 	"VOTE_TITLE"
