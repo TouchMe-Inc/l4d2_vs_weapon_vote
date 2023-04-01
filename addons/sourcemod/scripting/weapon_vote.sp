@@ -16,7 +16,7 @@ public Plugin myinfo =
 	name = "Weapon vote",
 	author = "TouchMe",
 	description = "Issues weapons based on voting results",
-	version = "1.1"
+	version = "1.1.1"
 };
 
 
@@ -378,18 +378,18 @@ public Action OnClientCommand(int iClient, int sArgs)
   *
   * @return				Status code.
   */
-public bool StartVote(int iClient, int iItem) 
+public void StartVote(int iClient, int iItem) 
 {
 	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_YesNo))
 	{
 		CPrintToChat(iClient, "%T", "UNSUPPORTED", iClient);
-		return false;
+		return;
 	}
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
 		CPrintToChat(iClient, "%T", "COULDOWN", iClient, NativeVotes_CheckVoteDelay());
-		return false;
+		return;
 	}
 
 	if (g_bReadyUpAvailable) {
@@ -418,7 +418,9 @@ public bool StartVote(int iClient, int iItem)
 	hVote.Team = VOTE_TEAM;
 	hVote.DisplayVote(iPlayers, iTotal, VOTE_TIME);
 
-	return true;
+	char sWeaponName[WEAPON_TITLE_SIZE];
+	g_hWeaponVoteList.title.GetString(iItem, sWeaponName, sizeof(sWeaponName));
+	CPrintToChatAll("%t", "VOTE_START", iClient, sWeaponName);
 }
 
 /**
@@ -445,11 +447,11 @@ public int HandlerVote(NativeVote hVote, MenuAction iAction, int iParam1, int iP
 		
 		case MenuAction_Display:
 		{
-			char sWeaponTitle[WEAPON_TITLE_SIZE];
-			g_hWeaponVoteList.title.GetString(g_iVotingItem, sWeaponTitle, sizeof(sWeaponTitle));
+			char sWeaponName[WEAPON_TITLE_SIZE];
+			g_hWeaponVoteList.title.GetString(g_iVotingItem, sWeaponName, sizeof(sWeaponName));
 
 			char sVoteTitle[VOTE_TITLE_SIZE];
-			Format(sVoteTitle, sizeof(sVoteTitle), "%T", "VOTE_TITLE", iParam1, hVote.Initiator, sWeaponTitle);
+			Format(sVoteTitle, sizeof(sVoteTitle), "%T", "VOTE_TITLE", iParam1, hVote.Initiator, sWeaponName);
 
 			NativeVotes_RedrawVoteTitle(sVoteTitle);
 
