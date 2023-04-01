@@ -16,7 +16,7 @@ public Plugin myinfo =
 	name = "Weapon vote",
 	author = "TouchMe",
 	description = "Issues weapons based on voting results",
-	version = "1.1.1"
+	version = "1.1"
 };
 
 
@@ -388,7 +388,7 @@ public void StartVote(int iClient, int iItem)
 
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		CPrintToChat(iClient, "%T", "COULDOWN", iClient, NativeVotes_CheckVoteDelay());
+		CPrintToChat(iClient, "%T", "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
 		return;
 	}
 
@@ -408,14 +408,13 @@ public void StartVote(int iClient, int iItem)
 		iPlayers[iTotal++] = iPlayer;
 	}
 
-	// Set Item
-	g_iVotingItem = iItem;
-
-	// Create vote
 	NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
 	
 	hVote.Initiator = iClient;
 	hVote.Team = VOTE_TEAM;
+
+	g_iVotingItem = iItem;
+
 	hVote.DisplayVote(iPlayers, iTotal, VOTE_TIME);
 
 	char sWeaponName[WEAPON_TITLE_SIZE];
