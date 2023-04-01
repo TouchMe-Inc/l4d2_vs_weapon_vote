@@ -20,6 +20,12 @@
 	{
 		"en"			"The round has already begun"
 	}
+	
+	"VOTE_START"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"Voting has begun for getting {2} by player {1}"
+	}
 
 	"VOTE_TITLE"
 	{
