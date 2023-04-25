@@ -2,7 +2,7 @@
 {
 	"ONLY_SURVIVOR"
 	{
-		"ru"			"Команда доступна только для {olive}выживших"
+		"ru"			"Команда доступна только для {blue}выживших"
 	}
 
 	"LEFT_READYUP"
@@ -20,27 +20,28 @@
 	{
 		"ru"			"Раунд уже начался"
 	}
-	
+
 	"VOTE_START"
 	{
 		"#format"		"{1:N},{2:s}"
-		"ru"			"Игрок {olive}{1} {default}начал голосование за получение {olive}{2}"
+		"ru"			"{blue}{1}{default} начал голосование за получение {olive}{2}"
 	}
 
 	"VOTE_TITLE"
 	{
 		"#format"		"{1:N},{2:s}"
-		"ru"			"{1} хочет получить {2}"
+		"ru"			"{blue}{1}{default} хочет получить {olive}{2}"
 	}
 
 	"VOTE_PASS"
 	{
 		"#format"		"{1:N},{2:s}"
-		"ru"			"{1} получил {2}"
+		"ru"			"{blue}{1}{default} получил {olive}{2}"
 	}
 	
-	"UNSUPPORTED"
+	"VOTE_FAIL"
 	{
-		"ru" 			"NativeVotes не может создать голосование"
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} не получил {olive}{2}"
 	}
 }
