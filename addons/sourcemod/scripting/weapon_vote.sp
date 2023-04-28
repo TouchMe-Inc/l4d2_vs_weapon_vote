@@ -3,7 +3,7 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <nativevotes>
+#include <nativevotes_rework>
 #include <colors>
 
 #undef REQUIRE_PLUGIN
@@ -16,7 +16,7 @@ public Plugin myinfo =
 	name = "Weapon vote",
 	author = "TouchMe",
 	description = "Issues weapons based on voting results",
-	version = "1.1"
+	version = "build_0001"
 };
 
 
@@ -31,64 +31,29 @@ public Plugin myinfo =
 #define VOTE_TEAM               TEAM_INFECTED
 #define VOTE_TIME               15
 
-#define MENU_TITLE_SIZE         64
-#define VOTE_TITLE_SIZE         128
-#define VOTE_MSG_SIZE           128
-
 #define WEAPON_NAME_SIZE        32
 #define WEAPON_TITLE_SIZE       64
 #define WEAPON_CMD_SIZE         32
 
 
-#define IS_VALID_CLIENT(%1)     (%1 > 0 && %1 <= MaxClients)
 #define IS_SURVIVOR(%1)         (GetClientTeam(%1) == TEAM_SURVIVOR)
+#define IS_VALID_CLIENT(%1)     (%1 > 0 && %1 <= MaxClients)
 #define IS_VALID_INGAME(%1)     (IS_VALID_CLIENT(%1) && IsClientInGame(%1))
-#define IS_VALID_SURVIVOR(%1)   (IS_VALID_INGAME(%1) && IS_SURVIVOR(%1))
-#define IS_SURVIVOR_ALIVE(%1)   (IS_VALID_SURVIVOR(%1) && IsPlayerAlive(%1))
+#define IS_SURVIVOR_ALIVE(%1)   (IS_VALID_INGAME(%1) && IS_SURVIVOR(%1) && IsPlayerAlive(%1))
 
-
-enum struct WeaponVoteList
+enum struct VoteItem
 {
-	ArrayList name;
-	ArrayList title;
-	StringMap cmd;
-	int size;
-
-	void Create()
-	{
-		this.title = new ArrayList(ByteCountToCells(WEAPON_TITLE_SIZE));
-		this.name = new ArrayList(ByteCountToCells(WEAPON_NAME_SIZE));
-		this.cmd = new StringMap();
-	}
-	
-	void Close()
-	{
-		delete this.title;
-		delete this.name;
-		delete this.cmd;
-	}
-
-	void AddItem(char[] sName, char[] sTitle, char[] sCmd)
-	{
-		this.title.PushString(sTitle);
-		this.name.PushString(sName);
-		this.cmd.SetValue(sCmd, this.size ++);
-	}
-
-	int Size() {
-		return this.size; 
-	}
+	char title[WEAPON_TITLE_SIZE];
+	char name[WEAPON_NAME_SIZE];
 }
 
-int
-	g_iVotingItem = 0;
+Handle g_hMapVoteItems = INVALID_HANDLE;
+
+VoteItem g_tVotingItem;
 
 bool
 	g_bReadyUpAvailable = false,
 	g_bRoundIsLive = false;
-
-WeaponVoteList
-	g_hWeaponVoteList;
 
 
 /**
@@ -130,8 +95,6 @@ public void OnLibraryAdded(const char[] sName)
 
 /**
   * Called before OnPluginStart.
-  *
-  * @noreturn
   */
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
@@ -144,23 +107,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	}
 
 	return APLRes_Success;
-}
-
-/**
-  * Loads dictionary files. On failure, stops the plugin execution.
-  *
-  * @noreturn
-  */
-void InitTranslations() 
-{
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, PLATFORM_MAX_PATH, "translations/" ... TRANSLATIONS ... ".txt");
-
-	if (FileExists(sPath)) {
-		LoadTranslations(TRANSLATIONS);
-	} else {
-		SetFailState("Path %s not found", sPath);
-	}
 }
 
 /**
@@ -180,13 +126,28 @@ public void OnMapInit(const char[] sMapName) {
 public void OnPluginStart()
 {
 	InitTranslations();
-	
-	g_hWeaponVoteList.Create();
 
-	ReadWeaponVoteList();
+	g_hMapVoteItems = CreateTrie();
+
+	ReadMapVoteItems();
 	
 	HookEvent("versus_round_start", Event_RoundStart, EventHookMode_PostNoCopy);
 	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
+}
+
+/**
+  * Loads dictionary files. On failure, stops the plugin execution.
+  */
+void InitTranslations() 
+{
+	char sPath[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, sPath, PLATFORM_MAX_PATH, "translations/" ... TRANSLATIONS ... ".txt");
+
+	if (FileExists(sPath)) {
+		LoadTranslations(TRANSLATIONS);
+	} else {
+		SetFailState("Path %s not found", sPath);
+	}
 }
 
 /**
@@ -196,7 +157,7 @@ public void OnPluginStart()
  */
 public void OnPluginEnd()
 {
-	g_hWeaponVoteList.Close();
+	CloseHandle(g_hMapVoteItems);
 }
 
 /**
@@ -204,7 +165,7 @@ public void OnPluginEnd()
   *
   * @noreturn
   */
-void ReadWeaponVoteList()
+void ReadMapVoteItems()
 {
 	char sPath[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, sPath, PLATFORM_MAX_PATH, CONFIG_FILEPATH);
@@ -217,10 +178,11 @@ void ReadWeaponVoteList()
 	if (!hFile) {
 		SetFailState("Could not open file!");
 	}
-	
+
 	while (!hFile.EndOfFile())
 	{
 		char sCurLine[255];
+
 		if (!hFile.ReadLine(sCurLine, sizeof(sCurLine))) {
 			break;
 		}
@@ -235,16 +197,16 @@ void ReadWeaponVoteList()
 				break;
 			}
 		}
-		
+
 		TrimString(sCurLine);
 		
 		if ((sCurLine[0] == '/' && sCurLine[1] == '/') || (sCurLine[0] == '\0')) {
 			continue;
 		}
-	
+
 		ParseLine(sCurLine);
 	}
-	
+
 	hFile.Close();
 }
 
@@ -258,34 +220,15 @@ void ReadWeaponVoteList()
   */
 void ParseLine(const char[] sLine)
 {
-	int iPos, iNextPos;
+	VoteItem tVoteItem;
+	int iPos;
 
-	// Get weapon_* id
-	char sId[WEAPON_NAME_SIZE];
-	iNextPos = BreakString(sLine, sId, sizeof(sId));
-	iPos = iNextPos;
+	iPos = BreakString(sLine, tVoteItem.name, sizeof(tVoteItem.name));
+	iPos += BreakString(sLine[iPos], tVoteItem.title, sizeof(tVoteItem.title));
 
-	// Get Weapon name (Menu item name)
-	if (iNextPos == -1) {
-		// Weapon name not found
-		return;
-	}
+	char sCmd[WEAPON_CMD_SIZE]; BreakString(sLine[iPos], sCmd, sizeof(sCmd));
 
-	char sName[WEAPON_TITLE_SIZE];
-	iNextPos = BreakString(sLine[iPos], sName, sizeof(sName));
-	iPos += iNextPos;
-
-
-	// Get weapon cmd
-	if (iNextPos == -1) {
-		// Cmd not found
-		return;
-	}
-
-	char sCmd[WEAPON_CMD_SIZE];
-	BreakString(sLine[iPos], sCmd, sizeof(sCmd));
-
-	g_hWeaponVoteList.AddItem(sId, sName, sCmd);
+	SetTrieArray(g_hMapVoteItems, sCmd, tVoteItem, sizeof(tVoteItem));
 }
 
 /**
@@ -325,21 +268,21 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
 		return Plugin_Handled;
 	}
-		
-	char sClearCmd[WEAPON_CMD_SIZE];
-	strcopy(sClearCmd, sizeof(sClearCmd), sArgs[1]);
 
-	if ((sArgs[0] == '/' || sArgs[0] == '!'))
-	{
-		int iItem;
+	if (sArgs[0] != '/' && sArgs[0] != '!') {
+		return Plugin_Continue;
+	}
 
-		if (g_hWeaponVoteList.cmd.GetValue(sClearCmd, iItem) 
-		&& CanClientStartVote(iClient)) {
-			StartVote(iClient, iItem);
-		}
-    }
+	char sCmd[WEAPON_CMD_SIZE];
+	strcopy(sCmd, sizeof(sCmd), sArgs[1]);
 
-	return Plugin_Continue;
+	VoteItem tVoteItem;
+
+	if (GetTrieArray(g_hMapVoteItems, sCmd, tVoteItem, sizeof(tVoteItem))) {
+		StartVote(iClient, tVoteItem);
+	}
+
+	return Plugin_Handled;
 }
 
 /**
@@ -350,92 +293,128 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
   *
   * @return Plugin_Handled | Plugin_Continue
   */
-public Action OnClientCommand(int iClient, int sArgs)
+public Action OnClientCommand(int iClient, int iArgs)
 {
 	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
 		return Plugin_Handled;
 	}
 
-	char sArgCmd[WEAPON_CMD_SIZE];
-  	GetCmdArg(0, sArgCmd, sizeof(sArgCmd));
-	strcopy(sArgCmd, sizeof(sArgCmd), sArgCmd[3]);
+	char sArgs[64];
+  	GetCmdArg(0, sArgs, sizeof(sArgs));
 
-	int iItem;
-
-	if (g_hWeaponVoteList.cmd.GetValue(sArgCmd, iItem) 
-	&& CanClientStartVote(iClient)) {
-		StartVote(iClient, iItem);
-    }
-
-	return Plugin_Continue;
-}
-
-/**
-  * Start voting.
-  *
-  * @param iClient		Client index.
-  * @param iItem		Weapon index.
-  *
-  * @return				Status code.
-  */
-public void StartVote(int iClient, int iItem) 
-{
-	if (!NativeVotes_IsVoteTypeSupported(NativeVotesType_Custom_YesNo))
-	{
-		CPrintToChat(iClient, "%T", "UNSUPPORTED", iClient);
-		return;
+	if (sArgs[0] != 's' && sArgs[1] != 'm' && sArgs[2] != '_') {
+		return Plugin_Continue;
 	}
 
+	char sCmd[WEAPON_CMD_SIZE];
+	strcopy(sCmd, sizeof(sCmd), sArgs[3]);
+
+	VoteItem tVoteItem;
+
+	if (GetTrieArray(g_hMapVoteItems, sCmd, tVoteItem, sizeof(tVoteItem))) {
+		StartVote(iClient, tVoteItem);
+	}
+
+	return Plugin_Handled;
+}
+
+public void StartVote(int iClient, VoteItem tVoteItem) 
+{
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
 		CPrintToChat(iClient, "%T", "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
 		return;
 	}
 
-	if (g_bReadyUpAvailable) {
-		ToggleReadyPanel(false);
+	if (g_bReadyUpAvailable && !IsInReady())
+	{
+		CPrintToChat(iClient, "%T", "LEFT_READYUP", iClient);
+		return;
+	} 
+
+	if (!g_bReadyUpAvailable && g_bRoundIsLive)
+	{
+		CPrintToChat(iClient, "%T", "ROUND_LIVE", iClient);
+		return;
 	}
 
-	int iTotal;
+	if (!IS_SURVIVOR(iClient))
+	{
+		CPrintToChat(iClient, "%T", "ONLY_SURVIVOR", iClient);
+		return;
+	}
+
+	g_tVotingItem = tVoteItem;
+
+	int iTotalPlayers;
 	int[] iPlayers = new int[MaxClients];
-	
+
 	for (int iPlayer = 1; iPlayer <= MaxClients; iPlayer++)
 	{
 		if (!IsClientInGame(iPlayer) || IsFakeClient(iPlayer) || (GetClientTeam(iPlayer) != VOTE_TEAM)) {
 			continue;
 		}
-			
-		iPlayers[iTotal++] = iPlayer;
+
+		iPlayers[iTotalPlayers++] = iPlayer;
 	}
 
-	NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo, NATIVEVOTES_ACTIONS_DEFAULT|MenuAction_Display);
-	
+	NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo);
 	hVote.Initiator = iClient;
 	hVote.Team = VOTE_TEAM;
-
-	g_iVotingItem = iItem;
-
-	hVote.DisplayVote(iPlayers, iTotal, VOTE_TIME);
-
-	char sWeaponName[WEAPON_TITLE_SIZE];
-	g_hWeaponVoteList.title.GetString(iItem, sWeaponName, sizeof(sWeaponName));
-	CPrintToChatAll("%t", "VOTE_START", iClient, sWeaponName);
+	hVote.DisplayVote(iPlayers, iTotalPlayers, VOTE_TIME);
 }
 
-/**
-  * Callback when voting is over and results are available.
-  *
-  * @param hVote 			Voting ID.
-  * @param iAction 			---.
-  * @param iParam1 		    Client index | Vote status.
-  *
-  * @noreturn
-  */
-public int HandlerVote(NativeVote hVote, MenuAction iAction, int iParam1, int iParam2)
+public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int iParam2)
 {
 	switch (iAction)
 	{
-		case MenuAction_End:
+		case VoteAction_Start:
+		{
+			CPrintToChatAll("%t", "VOTE_START", iParam1, g_tVotingItem.title);
+
+			if (g_bReadyUpAvailable) {
+				ToggleReadyPanel(false);
+			}
+		}
+
+		case VoteAction_Display:
+		{
+			hVote.SetDetails("%T", "VOTE_TITLE", iParam1, hVote.Initiator, g_tVotingItem.title);
+
+			return Plugin_Changed;
+		}
+		
+		case VoteAction_Cancel: {
+			hVote.DisplayFail();
+		}
+		
+		case VoteAction_Finish:
+		{
+			if (!IS_SURVIVOR_ALIVE(hVote.Initiator)
+				|| (!g_bReadyUpAvailable && g_bRoundIsLive)
+				|| (g_bReadyUpAvailable && !IsInReady())) {
+				hVote.DisplayFail();
+				return Plugin_Continue;
+			}
+
+			if (iParam1 == NATIVEVOTES_VOTE_NO)
+			{
+				hVote.DisplayFail();
+
+				CPrintToChatAll("%t", "VOTE_FAIL", hVote.Initiator, g_tVotingItem.title);
+			}
+
+			else
+			{
+				hVote.DisplayPass();
+
+				GivePlayerItem(hVote.Initiator, g_tVotingItem.name);
+
+				CPrintToChatAll("%t", "VOTE_PASS", hVote.Initiator, g_tVotingItem.title);
+			}
+		}
+
+		case VoteAction_End:
 		{
 			if (g_bReadyUpAvailable) {
 				ToggleReadyPanel(true);
@@ -443,95 +422,7 @@ public int HandlerVote(NativeVote hVote, MenuAction iAction, int iParam1, int iP
 
 			hVote.Close();
 		}
-		
-		case MenuAction_Display:
-		{
-			char sWeaponName[WEAPON_TITLE_SIZE];
-			g_hWeaponVoteList.title.GetString(g_iVotingItem, sWeaponName, sizeof(sWeaponName));
-
-			char sVoteTitle[VOTE_TITLE_SIZE];
-			Format(sVoteTitle, sizeof(sVoteTitle), "%T", "VOTE_TITLE", iParam1, hVote.Initiator, sWeaponName);
-
-			NativeVotes_RedrawVoteTitle(sVoteTitle);
-
-			return view_as<int>(Plugin_Changed);
-		}
-		
-		case MenuAction_VoteCancel:
-		{
-			if (iParam1 == VoteCancel_NoVotes) {
-				hVote.DisplayFail(NativeVotesFail_NotEnoughVotes);
-			}
-			
-			else {
-				hVote.DisplayFail(NativeVotesFail_Generic);
-			}
-		}
-		
-		case MenuAction_VoteEnd:
-		{
-			if (iParam1 == NATIVEVOTES_VOTE_NO 
-				|| (!g_bReadyUpAvailable && g_bRoundIsLive)
-				|| (g_bReadyUpAvailable && !IsInReady())
-				|| !IsClientInGame(hVote.Initiator)) {
-				hVote.DisplayFail(NativeVotesFail_Loses);
-			}
-
-			else
-			{
-				char sWeaponTitle[WEAPON_TITLE_SIZE];
- 				g_hWeaponVoteList.title.GetString(g_iVotingItem, sWeaponTitle, sizeof(sWeaponTitle));
-
-				char sVoteMsg[VOTE_MSG_SIZE];
-
-				for (int iPlayer = 1; iPlayer <= MaxClients; iPlayer++)
-				{
-					if (!IsClientInGame(iPlayer) || IsFakeClient(iPlayer) || (GetClientTeam(iPlayer) != VOTE_TEAM)) {
-						continue;
-					}
-
-					SetGlobalTransTarget(iPlayer);
-					Format(sVoteMsg, sizeof(sVoteMsg), "%T", "VOTE_PASS", iPlayer, hVote.Initiator, sWeaponTitle);
-					hVote.DisplayPassCustomToOne(iPlayer, sVoteMsg);
-				}
-
-				if (IS_SURVIVOR_ALIVE(hVote.Initiator))
-				{
-					char sWeaponName[WEAPON_NAME_SIZE];
-					g_hWeaponVoteList.name.GetString(g_iVotingItem, sWeaponName, sizeof(sWeaponName));
-					GivePlayerItem(hVote.Initiator, sWeaponName);
-				}
-			}
-		}
-	}
-	
-	return 0;
-}
-
-/**
-  * @param iClient          Client ID
-  *
-  * @return                 true if succes
-  */
-bool CanClientStartVote(int iClient)
-{
-	if (!IS_VALID_SURVIVOR(iClient))
-	{
-		CPrintToChat(iClient, "%T", "ONLY_SURVIVOR", iClient);
-		return false;
 	}
 
-	if (g_bReadyUpAvailable && !IsInReady())
-	{
-		CPrintToChat(iClient, "%T", "LEFT_READYUP", iClient);
-		return false;
-	} 
-	
-	if (!g_bReadyUpAvailable && g_bRoundIsLive)
-	{
-		CPrintToChat(iClient, "%T", "ROUND_LIVE", iClient);
-		return false;
-	}
-
-	return true;
+	return Plugin_Continue;
 }

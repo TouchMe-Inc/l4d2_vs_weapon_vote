@@ -2,7 +2,7 @@
 {
 	"ONLY_SURVIVOR"
 	{
-		"en"			"The team is only available to {olive}survivors"
+		"en"			"The team is only available to {blue}survivors"
 	}
 
 	"LEFT_READYUP"
@@ -24,7 +24,7 @@
 	"VOTE_START"
 	{
 		"#format"		"{1:N},{2:s}"
-		"en"			"Voting has begun for getting {2} by player {1}"
+		"en"			"{blue}{1}{default} started voting for {olive}{2}"
 	}
 
 	"VOTE_TITLE"
@@ -36,11 +36,12 @@
 	"VOTE_PASS"
 	{
 		"#format"		"{1:N},{2:s}"
-		"en"			"{1} set {2}"
+		"en"			"{blue}{1}{default} set {olive}{2}"
 	}
-	
-	"UNSUPPORTED"
+
+	"VOTE_FAIL"
 	{
-		"en" 			"This poll type is not supported!"
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} not received {olive}{2}"
 	}
 }
