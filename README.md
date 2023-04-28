@@ -15,7 +15,7 @@ Example:
 ```
 
 ## Require
-[NativeVotes](https://github.com/sapphonie/sourcemod-nativevotes-updated)
+[NativeVotesRework](https://github.com/TouchMe-Inc/l4d2_nativevotes_rework)
 
 ## Support
 [ReadyUp](https://github.com/SirPlease/L4D2-Competitive-Rework/blob/master/addons/sourcemod/scripting/readyup.sp)
