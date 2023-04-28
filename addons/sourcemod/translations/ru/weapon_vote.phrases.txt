@@ -30,7 +30,7 @@
 	"VOTE_TITLE"
 	{
 		"#format"		"{1:N},{2:s}"
-		"ru"			"{blue}{1}{default} хочет получить {olive}{2}"
+		"ru"			"{1} хочет получить {2}"
 	}
 
 	"VOTE_PASS"
