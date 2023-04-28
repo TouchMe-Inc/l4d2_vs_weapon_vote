@@ -1,0 +1,198 @@
+"Phrases"
+{
+	"ONLY_ALIVE_SURVIVOR"
+	{
+		"ru"			"Команда доступна только для живых {blue}выживших"
+	}
+
+	"LEFT_READYUP"
+	{
+		"ru"			"Доступно {olive}только во время ReadyUp"
+	}
+
+	"VOTE_COULDOWN"
+	{
+		"#format"		"{1:d}"
+		"ru"			"Сейчас голосование недоступно. Подождите {olive}{1} сек"
+	}
+
+	"ROUND_LIVE"
+	{
+		"ru"			"Раунд уже начался"
+	}
+
+	"VOTE_START"
+	{
+		"#format"		"{1:N},{2:s}"
+		"ru"			"{blue}{1}{default} начал голосование за получение {olive}{2}"
+	}
+
+	"VOTE_TITLE"
+	{
+		"#format"		"{1:N},{2:s}"
+		"ru"			"{1} хочет получить {2}"
+	}
+
+	"VOTE_PASS"
+	{
+		"#format"		"{1:N},{2:s}"
+		"ru"			"{blue}{1}{default} получил {olive}{2}"
+	}
+	
+	"VOTE_FAIL"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} не получил {olive}{2}"
+	}
+
+	"baseball_bat"
+	{
+		"en"			"Бейсбольная бита"
+	}
+
+	"cricket_bat"
+	{
+		"en"			"Бита для крикета"
+	}
+
+	"crowbar"
+	{
+		"en"			"Лом"
+	}
+
+	"electric_guitar"
+	{
+		"en"			"Гитара"
+	}
+
+	"frying_pan"
+	{
+		"en"			"Сковородка"
+	}
+
+	"golfclub"
+	{
+		"en"			"Клюшка"
+	}
+
+	"knife"
+	{
+		"en"			"Нож"
+	}
+
+	"shovel"
+	{
+		"en"			"Лопата"
+	}
+
+	"pitchfork"
+	{
+		"en"			"Вилы"
+	}
+
+	"tonfa"
+	{
+		"en"			"Tonfa"
+	}
+
+	"katana"
+	{
+		"en"			"Катана"
+	}
+
+	"fireaxe"
+	{
+		"en"			"Топор"
+	}
+
+	"machete"
+	{
+		"en"			"Мачете"
+	}
+
+	"weapon_smg"
+	{
+		"en"			"Smg"
+	}
+
+	"weapon_smg_silenced"
+	{
+		"en"			"Smg (Silenced)"
+	}
+
+	"weapon_smg_mp5"
+	{
+		"en"			"MP5"
+	}
+
+	"weapon_pumpshotgun"
+	{
+		"en"			"Pump"
+	}
+
+	"weapon_shotgun_chrome"
+	{
+		"en"			"Chrome"
+	}
+
+	"weapon_sniper_scout"
+	{
+		"en"			"Scout"
+	}
+
+	"weapon_autoshotgun"
+	{
+		"en"			"Autoshotgun"
+	}
+
+	"weapon_shotgun_spas"
+	{
+		"en"			"Spas"
+	}
+
+	"weapon_hunting_rifle"
+	{
+		"en"			"Hunting"
+	}
+
+	"weapon_sniper_military"
+	{
+		"en"			"Military"
+	}
+
+	"weapon_rifle"
+	{
+		"en"			"M16"
+	}
+
+	"weapon_rifle_desert"
+	{
+		"en"			"Scar"
+	}
+
+	"weapon_rifle_ak47"
+	{
+		"en"			"AK47"
+	}
+
+	"weapon_rifle_sg552"
+	{
+		"en"			"SG552"
+	}
+
+	"weapon_sniper_awp"
+	{
+		"en"			"AWP"
+	}
+
+	"weapon_grenade_launcher"
+	{
+		"en"			"Grenade Launcher"
+	}
+
+	"weapon_rifle_m60"
+	{
+		"en"			"M60"
+	}
+}
+

@@ -1,0 +1,202 @@
+"Phrases"
+{
+	"TAG"
+	{
+		"en"			"<{green}Weapon Vote{default}> "
+	}
+
+	"ONLY_ALIVE_SURVIVOR"
+	{
+		"en"			"Only alive {blue}survivors{default} can get weapons"
+	}
+
+	"LEFT_READYUP"
+	{
+		"en"			"Vote didnot pass before you left ready-up"
+	}
+
+	"VOTE_COULDOWN"
+	{
+		"#format"		"{1:d}"
+		"en"			"A vote cannot be called at this moment, try again in a {olive}{1} second"
+	}
+
+	"ROUND_LIVE"
+	{
+		"en"			"The round has already begun"
+	}
+	
+	"VOTE_START"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} started voting for {olive}{2}"
+	}
+
+	"VOTE_TITLE"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{1} get {2}"
+	}
+
+	"VOTE_PASS"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} set {olive}{2}"
+	}
+
+	"VOTE_FAIL"
+	{
+		"#format"		"{1:N},{2:s}"
+		"en"			"{blue}{1}{default} not received {olive}{2}"
+	}
+
+	"baseball_bat"
+	{
+		"en"			"Baseball Bat"
+	}
+
+	"cricket_bat"
+	{
+		"en"			"Cricket Bat"
+	}
+
+	"crowbar"
+	{
+		"en"			"Crowbar"
+	}
+
+	"electric_guitar"
+	{
+		"en"			"Guitar"
+	}
+
+	"frying_pan"
+	{
+		"en"			"Frying Pan"
+	}
+
+	"golfclub"
+	{
+		"en"			"Golf Club"
+	}
+
+	"knife"
+	{
+		"en"			"Knife"
+	}
+
+	"shovel"
+	{
+		"en"			"Shovel"
+	}
+
+	"pitchfork"
+	{
+		"en"			"Pitchfork"
+	}
+
+	"tonfa"
+	{
+		"en"			"Tonfa"
+	}
+
+	"katana"
+	{
+		"en"			"Katana"
+	}
+
+	"fireaxe"
+	{
+		"en"			"Axe"
+	}
+
+	"machete"
+	{
+		"en"			"Machete"
+	}
+
+	"weapon_smg"
+	{
+		"en"			"Smg"
+	}
+
+	"weapon_smg_silenced"
+	{
+		"en"			"Smg (Silenced)"
+	}
+
+	"weapon_smg_mp5"
+	{
+		"en"			"MP5"
+	}
+
+	"weapon_pumpshotgun"
+	{
+		"en"			"Pump"
+	}
+
+	"weapon_shotgun_chrome"
+	{
+		"en"			"Chrome"
+	}
+
+	"weapon_sniper_scout"
+	{
+		"en"			"Scout"
+	}
+
+	"weapon_autoshotgun"
+	{
+		"en"			"Autoshotgun"
+	}
+
+	"weapon_shotgun_spas"
+	{
+		"en"			"Spas"
+	}
+
+	"weapon_hunting_rifle"
+	{
+		"en"			"Hunting"
+	}
+
+	"weapon_sniper_military"
+	{
+		"en"			"Military"
+	}
+
+	"weapon_rifle"
+	{
+		"en"			"M16"
+	}
+
+	"weapon_rifle_desert"
+	{
+		"en"			"Scar"
+	}
+
+	"weapon_rifle_ak47"
+	{
+		"en"			"AK47"
+	}
+
+	"weapon_rifle_sg552"
+	{
+		"en"			"SG552"
+	}
+
+	"weapon_sniper_awp"
+	{
+		"en"			"AWP"
+	}
+
+	"weapon_grenade_launcher"
+	{
+		"en"			"Grenade Launcher"
+	}
+
+	"weapon_rifle_m60"
+	{
+		"en"			"M60"
+	}
+}
