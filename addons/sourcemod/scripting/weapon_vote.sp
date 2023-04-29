@@ -266,7 +266,7 @@ public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[] sArgs)
 {
 	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
-		return Plugin_Handled;
+		return Plugin_Continue;
 	}
 
 	if (sArgs[0] != '/' && sArgs[0] != '!') {
@@ -282,7 +282,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 		StartVote(iClient, tVoteItem);
 	}
 
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 /**
@@ -296,7 +296,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 public Action OnClientCommand(int iClient, int iArgs)
 {
 	if (!IS_VALID_CLIENT(iClient) || IsFakeClient(iClient)) {
-		return Plugin_Handled;
+		return Plugin_Continue;
 	}
 
 	char sArgs[64];
@@ -315,7 +315,7 @@ public Action OnClientCommand(int iClient, int iArgs)
 		StartVote(iClient, tVoteItem);
 	}
 
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 public void StartVote(int iClient, VoteItem tVoteItem) 
