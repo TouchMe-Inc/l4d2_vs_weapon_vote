@@ -1,0 +1,8 @@
+"Weapons"
+{
+	"weapon_sniper_scout"
+	{
+		"cmd" "sm_scout"
+		"cmd" "sm_sniper"
+	}
+}
