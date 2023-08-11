@@ -17,7 +17,7 @@ Example:
 		"cmd" "sm_sniper"
 	}
 
-  "weapon_smg"
+  	"weapon_smg"
 	{
 		"cmd" "sm_uzi"
 	}
