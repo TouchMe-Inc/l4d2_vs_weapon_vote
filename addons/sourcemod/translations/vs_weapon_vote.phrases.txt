@@ -2,7 +2,7 @@
 {
 	"TAG"
 	{
-		"en"			"<Weapon Vote>"
+		"en"			"<{green}Weapon Vote{default}> "
 	}
 
 	"ONLY_SURVIVOR"
@@ -12,7 +12,7 @@
 
 	"LEFT_READYUP"
 	{
-		"en"			"Vote didnot pass before you left ready-up"
+		"en"			"Vote didnot pass before you left readyup"
 	}
 
 	"VOTE_COULDOWN"
