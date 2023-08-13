@@ -200,25 +200,25 @@ public void StartVote(int iClient, const char[] sWeaponName)
 {
 	if (!NativeVotes_IsNewVoteAllowed())
 	{
-		CPrintToChat(iClient, "%T", "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
+		CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
 		return;
 	}
 
 	if (g_bReadyUpAvailable && !IsInReady())
 	{
-		CPrintToChat(iClient, "%T", "LEFT_READYUP", iClient);
+		CPrintToChat(iClient, "%T%T", "TAG", iClient, "LEFT_READYUP", iClient);
 		return;
 	}
 
 	if (!g_bReadyUpAvailable && g_bRoundIsLive)
 	{
-		CPrintToChat(iClient, "%T", "ROUND_LIVE", iClient);
+		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ROUND_LIVE", iClient);
 		return;
 	}
 
 	if (!IsClientSurvivor(iClient))
 	{
-		CPrintToChat(iClient, "%T", "ONLY_SURVIVOR", iClient);
+		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ONLY_SURVIVOR", iClient);
 		return;
 	}
 
@@ -258,7 +258,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 					continue;
 				}
 
-				CPrintToChat(iClient, "%T", "VOTE_START", iClient, iParam1, sDisplayName);
+				CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_START", iClient, iParam1, sDisplayName);
 			}
 
 			if (g_bReadyUpAvailable) {
@@ -301,7 +301,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 						continue;
 					}
 
-					CPrintToChat(iClient, "%T", "VOTE_FAIL", iClient, hVote.Initiator, sDisplayName);
+					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_FAIL", iClient, hVote.Initiator, sDisplayName);
 				}
 			}
 
@@ -319,7 +319,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 						continue;
 					}
 
-					CPrintToChat(iClient, "%T", "VOTE_PASS", iClient, hVote.Initiator, sDisplayName);
+					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_PASS", iClient, hVote.Initiator, sDisplayName);
 				}
 			}
 		}
