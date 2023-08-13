@@ -216,9 +216,9 @@ public void StartVote(int iClient, const char[] sWeaponName)
 		return;
 	}
 
-	if (!IsClientSurvivor(iClient))
+	if (!IsClientSurvivor(iClient) || !IsPlayerAlive(iClient))
 	{
-		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ONLY_SURVIVOR", iClient);
+		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ONLY_ALIVE_SURVIVOR", iClient);
 		return;
 	}
 
@@ -250,13 +250,15 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 	{
 		case VoteAction_Start:
 		{
-			char sDisplayName[64]; GetDisplayName(sDisplayName, sizeof(sDisplayName), g_sWeaponName);
+			char sDisplayName[64];
 
 			for (int iClient = 1; iClient <= MaxClients; iClient ++)
 			{
 				if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
 					continue;
 				}
+
+				FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
 
 				CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_START", iClient, iParam1, sDisplayName);
 			}
@@ -268,7 +270,9 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 
 		case VoteAction_Display:
 		{
-			char sDisplayName[64]; GetDisplayName(sDisplayName, sizeof(sDisplayName), g_sWeaponName);
+			char sDisplayName[64];
+
+			FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iParam1, g_sWeaponName);
 
 			hVote.SetDetails("%T", "VOTE_TITLE", iParam1, hVote.Initiator, sDisplayName);
 
@@ -293,13 +297,15 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 			{
 				hVote.DisplayFail();
 
-				char sDisplayName[64]; GetDisplayName(sDisplayName, sizeof(sDisplayName), g_sWeaponName);
+				char sDisplayName[64];
 
 				for (int iClient = 1; iClient <= MaxClients; iClient ++)
 				{
 					if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
 						continue;
 					}
+
+					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
 
 					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_FAIL", iClient, hVote.Initiator, sDisplayName);
 				}
@@ -311,13 +317,15 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 
 				GivePlayerItem(hVote.Initiator, g_sWeaponName);
 
-				char sDisplayName[64]; GetDisplayName(sDisplayName, sizeof(sDisplayName), g_sWeaponName);
+				char sDisplayName[64];
 
 				for (int iClient = 1; iClient <= MaxClients; iClient ++)
 				{
 					if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
 						continue;
 					}
+
+					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
 
 					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_PASS", iClient, hVote.Initiator, sDisplayName);
 				}
@@ -401,40 +409,6 @@ public SMCResult Parser_LeaveSection(SMCParser smc)
 	}
 
 	return SMCParse_Continue;
-}
-
-void GetDisplayName(char[] sOutput, int iLen, const char[] sWeaponName)
-{
-	static const char sWeapons[][] = {
-		"smg", "SMG",
-		"smg_mp5", "MP5",
-		"pumpshotgun", "Pump Shotgun",
-		"shotgun_chrome", "Chrome Shotgun",
-		"sniper_scout", "Scout",
-		"pistol_magnum", "Magnum Pistol",
-		"autoshotgun", "Autoshotgun",
-		"rifle", "M16",
-		"hunting_rifle", "Hunting Rifle",
-		"smg_silenced", "SMG (Silenced)",
-		"rifle_desert", "Scar",
-		"sniper_military", "SG550",
-		"shotgun_spas", "Spas",
-		"rifle_ak47", "AK47",
-		"sniper_awp", "AWP",
-		"rifle_sg552", "SG552",
-		"rifle_m60", "M60"
-	};
-
-	for (int iItem = 0; iItem < sizeof(sWeapons); iItem += 2)
-	{
-		if (StrEqual(sWeapons[iItem], sWeaponName[7], false))
-		{
-			strcopy(sOutput, iLen, sWeapons[iItem + 1]);
-			return;
-		}
-	}
-
-	strcopy(sOutput, iLen, sWeaponName[7]);
 }
 
 bool IsValidClient(int iClient) {
