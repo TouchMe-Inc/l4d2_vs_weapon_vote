@@ -16,7 +16,7 @@ public Plugin myinfo =
 	name = "VersusWeaponVote",
 	author = "TouchMe",
 	description = "Issues weapons based on voting results",
-	version = "build_0002",
+	version = "build_0003",
 	url = "https://github.com/TouchMe-Inc/l4d2_vs_weapon_vote"
 };
 
@@ -258,7 +258,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 					continue;
 				}
 
-				FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
+				FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
 
 				CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_START", iClient, iParam1, sDisplayName);
 			}
@@ -272,7 +272,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 		{
 			char sDisplayName[64];
 
-			FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iParam1, g_sWeaponName);
+			FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iParam1);
 
 			hVote.SetDetails("%T", "VOTE_TITLE", iParam1, hVote.Initiator, sDisplayName);
 
@@ -305,7 +305,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 						continue;
 					}
 
-					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
+					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
 
 					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_FAIL", iClient, hVote.Initiator, sDisplayName);
 				}
@@ -325,7 +325,7 @@ public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int
 						continue;
 					}
 
-					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", iClient, g_sWeaponName);
+					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
 
 					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_PASS", iClient, hVote.Initiator, sDisplayName);
 				}
