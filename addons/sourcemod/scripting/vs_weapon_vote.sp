@@ -405,17 +405,17 @@ public SMCResult Parser_LeaveSection(SMCParser smc)
 
 void GetDisplayName(char[] sOutput, int iLen, const char[] sWeaponName)
 {
-	char sWeapons[][] = {
-		"smg", "Uzi",
+	static const char sWeapons[][] = {
+		"smg", "SMG",
 		"smg_mp5", "MP5",
-		"pumpshotgun", "Pump",
+		"pumpshotgun", "Pump Shotgun",
+		"shotgun_chrome", "Chrome Shotgun",
 		"sniper_scout", "Scout",
-		"pistol_magnum", "Magnum",
+		"pistol_magnum", "Magnum Pistol",
 		"autoshotgun", "Autoshotgun",
-		"rifle", "M4A1",
+		"rifle", "M16",
 		"hunting_rifle", "Hunting Rifle",
-		"smg_silenced", "Smg",
-		"shotgun_chrome", "Chrome",
+		"smg_silenced", "SMG (Silenced)",
 		"rifle_desert", "Scar",
 		"sniper_military", "SG550",
 		"shotgun_spas", "Spas",
