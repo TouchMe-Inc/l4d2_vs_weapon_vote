@@ -2,7 +2,7 @@
 The plugin adds the ability to get weapons by voting.
 
 ## Commands
-`!<weapon>` - get <weapon>.
+`!<weapon>` - get "weapon" (!scout).
 
 ## How to add weapons?
 To add a weapon to the list, edit the `config/vs_weapon_vote.txt` file. 
@@ -28,4 +28,4 @@ Example:
 [NativeVotesRework](https://github.com/TouchMe-Inc/l4d2_nativevotes_rework)
 
 ## Support
-[ReadyUp](https://github.com/SirPlease/L4D2-Competitive-Rework/blob/master/addons/sourcemod/scripting/readyup.sp)
+ReadyUp
