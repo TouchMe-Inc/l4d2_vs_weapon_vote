@@ -6,110 +6,127 @@
 #include <nativevotes_rework>
 #include <colors>
 
-#undef REQUIRE_PLUGIN
-#include <readyup>
-#define REQUIRE_PLUGIN
-
 
 public Plugin myinfo =
 {
-	name = "VersusWeaponVote",
-	author = "TouchMe",
-	description = "Issues weapons based on voting results",
-	version = "build_0003",
-	url = "https://github.com/TouchMe-Inc/l4d2_vs_weapon_vote"
+    name        = "VersusWeaponVote",
+    author      = "TouchMe",
+    description = "Issues weapons based on voting results",
+    version     = "build_0004",
+    url         = "https://github.com/TouchMe-Inc/l4d2_vs_weapon_vote"
 };
 
 
-// Libs
-#define LIB_READY              "readyup"
-
 #define TRANSLATIONS            "vs_weapon_vote.phrases"
-#define CONFIG_FILEPATH         "configs/vs_weapon_vote.txt"
 
 #define TEAM_SURVIVOR           2
 #define TEAM_INFECTED           3
 
 #define VOTE_TIME               15
 
-#define WEAPON_NAME_SIZE        32
-#define WEAPON_CMD_SIZE         32
+#define DEFAULT_PATH_TO_CONFIG  "addons/sourcemod/configs/vs_weapon_vote.txt"
 
+/*
+ * Slots.
+ */
+#define SLOT_PRIMARY            0
+#define SLOT_SECONDARY          1
+
+/*
+ * String size limits.
+ */
+#define MAXLENGTH_NODE_KEY      32
+#define MAXLENGTH_NODE_VALUE    64
+#define MAXLENGTH_EL_NAME       64
+#define MAXLENGTH_EL_CMD        32
+
+enum struct NodeItem
+{
+    char key[MAXLENGTH_NODE_KEY];
+    char value[MAXLENGTH_NODE_VALUE];
+    ArrayList children;
+}
+
+enum MenuElementType
+{
+    Element_Item,
+    Element_Category
+}
+
+enum struct MenuElement
+{
+    MenuElementType type;
+    char name[MAXLENGTH_EL_NAME];
+    char cmd[MAXLENGTH_EL_CMD];
+    ArrayList children;
+
+    void Create(MenuElementType t)
+    {
+        this.type = t;
+        this.name[0] = '\0';
+        this.cmd[0] = '\0';
+
+        switch (t)
+        {
+            case Element_Category: this.children = new ArrayList(sizeof MenuElement);
+            case Element_Item: this.children = null;
+        }
+    }
+
+    void AddChild(MenuElement child)
+    {
+        if (this.type == Element_Category) {
+            this.children.PushArray(child);
+        }
+    }
+
+    bool IsCategory() {
+        return this.type == Element_Category;
+    }
+}
+
+StringMap g_hWeaponSlots = null;
+StringMap g_smMenuElementCache = null;
+ArrayList g_aMenuElements = null;
+
+MenuElement g_eClientActiveCategory[MAXPLAYERS + 1];
+
+ConVar g_cvPathToConfig = null;
 
 // Vars
 
 enum ConfigSection
 {
-	ConfigSection_None,
-	ConfigSection_Weapons,
-	ConfigSection_Weapon
+    ConfigSection_None,
+    ConfigSection_Weapons,
+    ConfigSection_Weapon
 }
 
-ConfigSection g_tConfigSection = ConfigSection_None;
 
-char
-	g_sConfigSection[WEAPON_NAME_SIZE],
-	g_sWeaponName[WEAPON_NAME_SIZE];
+char  g_szWeaponName[MAXLENGTH_EL_NAME];
 
 bool
-	g_bReadyUpAvailable = false,
-	g_bRoundIsLive = false;
-
-Handle g_hWeapons = INVALID_HANDLE;
-
-
-/**
-  * Global event. Called when all plugins loaded.
-  */
-public void OnAllPluginsLoaded() {
-	g_bReadyUpAvailable = LibraryExists(LIB_READY);
-}
-
-/**
-  * Global event. Called when a library is removed.
-  *
-  * @param sName 			Library name.
-  */
-public void OnLibraryRemoved(const char[] sName)
-{
-	if (StrEqual(sName, LIB_READY)) {
-		g_bReadyUpAvailable = false;
-	}
-}
-
-/**
-  * Global event. Called when a library is added.
-  *
-  * @param sName 			Library name.
-  */
-public void OnLibraryAdded(const char[] sName)
-{
-	if (StrEqual(sName, LIB_READY)) {
-		g_bReadyUpAvailable = true;
-	}
-}
+    g_bRoundIsLive = false;
 
 /**
   * Called before OnPluginStart.
   */
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	EngineVersion engine = GetEngineVersion();
+    if (GetEngineVersion() != Engine_Left4Dead2)
+    {
+        strcopy(error, err_max, "Plugin only supports Left 4 Dead 2.");
+        return APLRes_SilentFailure;
+    }
 
-	if (engine != Engine_Left4Dead2)
-	{
-		strcopy(error, err_max, "Plugin only supports Left 4 Dead 2.");
-		return APLRes_SilentFailure;
-	}
-
-	return APLRes_Success;
+    return APLRes_Success;
 }
 
 /**
   * Called when the map loaded.
   */
 public void OnMapStart() {
-	g_bRoundIsLive = false;
+    g_bRoundIsLive = false;
 }
 
 /**
@@ -117,312 +134,614 @@ public void OnMapStart() {
  */
 public void OnPluginStart()
 {
-	g_hWeapons = CreateTrie();
+    g_hWeaponSlots = new StringMap();
 
-	LoadTranslations(TRANSLATIONS);
+    LoadTranslations(TRANSLATIONS);
 
-	LoadConfig(CONFIG_FILEPATH);
+    g_cvPathToConfig = CreateConVar("sm_wv_path_to_cfg", DEFAULT_PATH_TO_CONFIG);
+    HookConVarChange(g_cvPathToConfig, OnPathToCfgChanged);
 
-	RegCmds();
+    FillWeaponSlots(g_hWeaponSlots);
 
-	HookEvent("versus_round_start", Event_RoundStart, EventHookMode_PostNoCopy);
-	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
-}
+    RegConsoleCmd("sm_wv", Cmd_ShowMainMenu);
+    AddCommandListener(Cmd_Say, "say");
+    AddCommandListener(Cmd_Say, "say_team");
+    AddCommandListener(ConCmd_Any);
 
-void RegCmds()
-{
-	Handle hSnapshot = CreateTrieSnapshot(g_hWeapons);
+    HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
+    HookEvent("player_left_start_area", Event_LeftStartArea, EventHookMode_PostNoCopy);
 
-	int iSize = TrieSnapshotLength(hSnapshot);
+    char szPath[PLATFORM_MAX_PATH];
+    GetConVarString(g_cvPathToConfig, szPath, sizeof szPath);
 
-	char sCmd[WEAPON_CMD_SIZE];
-
-	for(int iIndex = 0; iIndex < iSize; iIndex ++)
-	{
-		GetTrieSnapshotKey(hSnapshot, iIndex, sCmd, sizeof(sCmd));
-		RegConsoleCmd(sCmd, Cmd_StartVote);
-	}
-
-	CloseHandle(hSnapshot);
-}
-
-public Action Cmd_StartVote(int iClient, int iArgs)
-{
-	if (!IsValidClient(iClient)) {
-		return Plugin_Continue;
-	}
-
-	char sCmd[WEAPON_CMD_SIZE];
-	GetCmdArg(0, sCmd, sizeof(sCmd));
-
-	char sWeaponName[WEAPON_NAME_SIZE];
-
-	if (GetTrieString(g_hWeapons, sCmd, sWeaponName, sizeof(sWeaponName))) {
-		StartVote(iClient, sWeaponName);
-	}
-
-	return Plugin_Continue;
+    g_smMenuElementCache = new StringMap();
+    g_aMenuElements = BuildMenu(szPath);
+    PushMenuElementToCache(g_smMenuElementCache, g_aMenuElements);
 }
 
 /**
  * Called when the plugin is about to be unloaded.
  */
 public void OnPluginEnd() {
-	CloseHandle(g_hWeapons);
+    
+}
+
+/**
+ *
+ */
+void OnPathToCfgChanged(ConVar cv, const char[] szOldPath, const char[] szNewPath)
+{
+    delete g_smMenuElementCache;
+    delete g_aMenuElements;
+
+    char szPath[PLATFORM_MAX_PATH];
+    GetConVarString(cv, szPath, sizeof szPath);
+
+    g_smMenuElementCache = new StringMap();
+    g_aMenuElements = BuildMenu(szPath);
+    PushMenuElementToCache(g_smMenuElementCache, g_aMenuElements);
+}
+
+Action Cmd_ShowMainMenu(int iClient, int iArgs)
+{
+    if (!iClient) {
+        return Plugin_Handled;
+    }
+
+    ShowMainMenu(iClient);
+
+    return Plugin_Handled;
+}
+
+Action Cmd_Say(int iClient, const char[] szCmd, int iArgs)
+{
+    if (!iClient || !IsClientConnected(iClient)) {
+        return Plugin_Continue;
+    }
+
+    char szMessage[32];
+    GetCmdArgString(szMessage, sizeof szMessage);
+    TrimString(szMessage);
+    StripQuotes(szMessage);
+
+    MenuElement element;
+    if ((szMessage[0] == '!' || szMessage[0] == '/') && g_smMenuElementCache.GetArray(szMessage[1], element, sizeof element))
+    {
+        if (element.IsCategory())
+        {
+            g_eClientActiveCategory[iClient] = element;
+            ShowWeaponMenu(iClient, element);
+            return Plugin_Handled;
+        }
+
+        if (!CanPickupWeapon(iClient)) {
+            return Plugin_Handled;
+        }
+
+        StartVote(iClient, element.name);
+
+        return Plugin_Handled;
+    }
+
+    return Plugin_Continue;
+}
+
+Action ConCmd_Any(int iClient, const char[] szCmd, int iArgs)
+{
+    if (iClient <= 0 || !IsClientConnected(iClient)) {
+        return Plugin_Continue;
+    }
+
+    MenuElement element;
+    if (StrContains(szCmd, "sm_", false) == 0 && g_smMenuElementCache.GetArray(szCmd[3], element, sizeof element))
+    {
+        if (element.IsCategory())
+        {
+            g_eClientActiveCategory[iClient] = element;
+            ShowWeaponMenu(iClient, element);
+            return Plugin_Handled;
+        }
+
+        if (!CanPickupWeapon(iClient)) {
+            return Plugin_Handled;
+        }
+
+        StartVote(iClient, element.name);
+
+        return Plugin_Handled;
+    }
+
+    return Plugin_Continue;
+}
+
+void ShowMainMenu(int iClient)
+{
+    Menu menu = CreateMenu(HandlerMainMenu, MenuAction_Select|MenuAction_End);
+    menu.SetTitle("%T", "MENU_MAIN", iClient);
+
+    char szMenuItem[64], szMenuIndex[4];
+
+    MenuElement element;
+    int iArraySize = g_aMenuElements.Length;
+    for (int iIdx = 0; iIdx < iArraySize; iIdx++)
+    {
+        GetArrayArray(g_aMenuElements, iIdx, element);
+
+        FormatEx(szMenuIndex, sizeof szMenuIndex, "%d", iIdx);
+
+        if (TranslationPhraseExists(element.name)) {
+            FormatEx(szMenuItem, sizeof szMenuItem, "%T", element.name, iClient);
+        } else {
+            FormatEx(szMenuItem, sizeof szMenuItem, "%s", element.name);
+        }
+
+        menu.AddItem(szMenuIndex, szMenuItem);
+    }
+
+    menu.Display(iClient, MENU_TIME_FOREVER);
+}
+
+int HandlerMainMenu(Menu menu, MenuAction action, int iClient, int iItem)
+{
+    switch (action)
+    {
+        case MenuAction_End: delete menu;
+
+        case MenuAction_Select:
+        {
+            char szMenuIndex[4];
+            menu.GetItem(iItem, szMenuIndex, sizeof szMenuIndex);
+
+            int iMenuIndex = StringToInt(szMenuIndex);
+
+            MenuElement element;
+            g_aMenuElements.GetArray(iMenuIndex, element);
+
+            if (element.IsCategory())
+            {
+                g_eClientActiveCategory[iClient] = element;
+                ShowWeaponMenu(iClient, element);
+                return 0;
+            }
+
+            if (!CanPickupWeapon(iClient))
+            {
+                ShowMainMenu(iClient);
+                return 0;
+            }
+
+            StartVote(iClient, element.name);
+        }
+    }
+
+    return 0;
 }
 
 /**
  * Round start event.
  */
-public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
-{
-	if (!g_bReadyUpAvailable) {
-		g_bRoundIsLive = true;
-	}
-
-	return Plugin_Continue;
+void Event_RoundStart(Event event, const char[] name, bool dontBroadcast) {
+    g_bRoundIsLive = false;
 }
 
-/**
- * Round end event.
- */
-public Action Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
-{
-	if (!g_bReadyUpAvailable) {
-		g_bRoundIsLive = false;
-	}
-
-	return Plugin_Continue;
+void Event_LeftStartArea(Event event, const char[] sName, bool bDontBroadcast) {
+    g_bRoundIsLive = true;
 }
 
-public void StartVote(int iClient, const char[] sWeaponName)
+public void StartVote(int iClient, const char[] szWeaponName)
 {
-	if (!NativeVotes_IsNewVoteAllowed())
-	{
-		CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
-		return;
-	}
+    if (!NativeVotes_IsNewVoteAllowed())
+    {
+        CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_COULDOWN", iClient, NativeVotes_CheckVoteDelay());
+        return;
+    }
 
-	if (g_bReadyUpAvailable && !IsInReady())
-	{
-		CPrintToChat(iClient, "%T%T", "TAG", iClient, "LEFT_READYUP", iClient);
-		return;
-	}
+    strcopy(g_szWeaponName, sizeof(g_szWeaponName), szWeaponName);
 
-	if (!g_bReadyUpAvailable && g_bRoundIsLive)
-	{
-		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ROUND_LIVE", iClient);
-		return;
-	}
+    int iTotalPlayers;
+    int[] iPlayers = new int[MaxClients];
 
-	if (!IsClientSurvivor(iClient) || !IsPlayerAlive(iClient))
-	{
-		CPrintToChat(iClient, "%T%T", "TAG", iClient, "ONLY_ALIVE_SURVIVOR", iClient);
-		return;
-	}
+    for (int iPlayer = 1; iPlayer <= MaxClients; iPlayer ++)
+    {
+        if (!IsClientInGame(iPlayer)
+        || IsFakeClient(iPlayer)
+        || !IsClientInfected(iPlayer)) {
+            continue;
+        }
 
-	strcopy(g_sWeaponName, sizeof(g_sWeaponName), sWeaponName);
+        iPlayers[iTotalPlayers++] = iPlayer;
+    }
 
-	int iTotalPlayers;
-	int[] iPlayers = new int[MaxClients];
-
-	for (int iPlayer = 1; iPlayer <= MaxClients; iPlayer ++)
-	{
-		if (!IsClientInGame(iPlayer)
-		|| IsFakeClient(iPlayer)
-		|| !IsClientInfected(iPlayer)) {
-			continue;
-		}
-
-		iPlayers[iTotalPlayers++] = iPlayer;
-	}
-
-	NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo);
-	hVote.Initiator = iClient;
-	hVote.Team = TEAM_INFECTED;
-	hVote.DisplayVote(iPlayers, iTotalPlayers, VOTE_TIME);
+    NativeVote hVote = new NativeVote(HandlerVote, NativeVotesType_Custom_YesNo);
+    hVote.Initiator = iClient;
+    hVote.Team = TEAM_INFECTED;
+    hVote.DisplayVote(iPlayers, iTotalPlayers, VOTE_TIME);
 }
 
 public Action HandlerVote(NativeVote hVote, VoteAction iAction, int iParam1, int iParam2)
 {
-	switch (iAction)
-	{
-		case VoteAction_Start:
-		{
-			char sDisplayName[64];
+    switch (iAction)
+    {
+        case VoteAction_Start:
+        {
+            char szDisplayName[64];
 
-			for (int iClient = 1; iClient <= MaxClients; iClient ++)
-			{
-				if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
-					continue;
-				}
+            for (int iClient = 1; iClient <= MaxClients; iClient ++)
+            {
+                if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
+                    continue;
+                }
 
-				FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
+                FormatEx(szDisplayName, sizeof(szDisplayName), "%T", g_szWeaponName, iClient);
 
-				CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_START", iClient, iParam1, sDisplayName);
-			}
+                CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_START", iClient, iParam1, szDisplayName);
+            }
+        }
 
-			if (g_bReadyUpAvailable) {
-				ToggleReadyPanel(false);
-			}
-		}
+        case VoteAction_Display:
+        {
+            char szDisplayName[64];
 
-		case VoteAction_Display:
-		{
-			char sDisplayName[64];
+            FormatEx(szDisplayName, sizeof(szDisplayName), "%T", g_szWeaponName, iParam1);
 
-			FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iParam1);
+            hVote.SetDetails("%T", "VOTE_TITLE", iParam1, hVote.Initiator, szDisplayName);
 
-			hVote.SetDetails("%T", "VOTE_TITLE", iParam1, hVote.Initiator, sDisplayName);
+            return Plugin_Changed;
+        }
 
-			return Plugin_Changed;
-		}
+        case VoteAction_Cancel: {
+            hVote.DisplayFail();
+        }
 
-		case VoteAction_Cancel: {
-			hVote.DisplayFail();
-		}
+        case VoteAction_Finish:
+        {
+            if (g_bRoundIsLive || !IsClientSurvivor(hVote.Initiator) || !IsPlayerAlive(hVote.Initiator)) {
+                hVote.DisplayFail();
+                return Plugin_Continue;
+            }
 
-		case VoteAction_Finish:
-		{
-			if (!IsClientSurvivor(hVote.Initiator)
-				|| !IsPlayerAlive(hVote.Initiator)
-				|| (!g_bReadyUpAvailable && g_bRoundIsLive)
-				|| (g_bReadyUpAvailable && !IsInReady())) {
-				hVote.DisplayFail();
-				return Plugin_Continue;
-			}
+            if (iParam1 == NATIVEVOTES_VOTE_NO)
+            {
+                hVote.DisplayFail();
 
-			if (iParam1 == NATIVEVOTES_VOTE_NO)
-			{
-				hVote.DisplayFail();
+                char szDisplayName[64];
 
-				char sDisplayName[64];
+                for (int iClient = 1; iClient <= MaxClients; iClient ++)
+                {
+                    if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
+                        continue;
+                    }
 
-				for (int iClient = 1; iClient <= MaxClients; iClient ++)
-				{
-					if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
-						continue;
-					}
+                    FormatEx(szDisplayName, sizeof(szDisplayName), "%T", g_szWeaponName, iClient);
 
-					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
+                    CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_FAIL", iClient, hVote.Initiator, szDisplayName);
+                }
+            }
 
-					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_FAIL", iClient, hVote.Initiator, sDisplayName);
-				}
-			}
+            else
+            {
+                hVote.DisplayPass();
 
-			else
-			{
-				hVote.DisplayPass();
+                if (PickupWeapon(hVote.Initiator, g_szWeaponName) != -1)
+                {
+                    char szDisplayName[64];
 
-				GivePlayerItem(hVote.Initiator, g_sWeaponName);
+                    for (int iClient = 1; iClient <= MaxClients; iClient ++)
+                    {
+                        if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
+                            continue;
+                        }
 
-				char sDisplayName[64];
+                        FormatEx(szDisplayName, sizeof(szDisplayName), "%T", g_szWeaponName, iClient);
 
-				for (int iClient = 1; iClient <= MaxClients; iClient ++)
-				{
-					if (!IsClientInGame(iClient) || IsFakeClient(iClient)) {
-						continue;
-					}
+                        CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_PASS", iClient, hVote.Initiator, szDisplayName);
+                    }
+                }
+            }
+        }
 
-					FormatEx(sDisplayName, sizeof(sDisplayName), "%T", g_sWeaponName, iClient);
+        case VoteAction_End: hVote.Close();
+    }
 
-					CPrintToChat(iClient, "%T%T", "TAG", iClient, "VOTE_PASS", iClient, hVote.Initiator, sDisplayName);
-				}
-			}
-		}
-
-		case VoteAction_End:
-		{
-			if (g_bReadyUpAvailable) {
-				ToggleReadyPanel(true);
-			}
-
-			hVote.Close();
-		}
-	}
-
-	return Plugin_Continue;
+    return Plugin_Continue;
 }
 
-bool LoadConfig(const char[] sPathToConfig)
+void ShowWeaponMenu(int iClient, MenuElement element)
 {
-	char sPath[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, sPath, PLATFORM_MAX_PATH, sPathToConfig);
+    Menu menu = CreateMenu(HandlerWeaponMenu, MenuAction_Select|MenuAction_End);
+    TranslationPhraseExists(element.name);
 
-	if (!FileExists(sPath)) {
-		SetFailState("File %s not found", sPath);
-	}
+    if (TranslationPhraseExists(element.name)) {
+        menu.SetTitle("%T", element.name, iClient);
+    } else {
+        menu.SetTitle("%s", element.name);
+    }
 
-	Handle hParser = SMC_CreateParser();
+    char szMenuItem[64], szMenuIndex[4];
 
-	int iLine = 0;
-	int iColumn = 0;
+    MenuElement sub;
+    for (int iIdx = 0, iArraySize = element.children.Length; iIdx < iArraySize; iIdx ++)
+    {
+        element.children.GetArray(iIdx, sub, sizeof sub);
 
-	SMC_SetReaders(hParser, Parser_EnterSection, Parser_KeyValue, Parser_LeaveSection);
+        FormatEx(szMenuIndex, sizeof szMenuIndex, "%d", iIdx);
 
-	SMCError hResult = SMC_ParseFile(hParser, sPath, iLine, iColumn);
-	
-	CloseHandle(hParser);
+        if (TranslationPhraseExists(sub.name)) {
+            FormatEx(szMenuItem, sizeof szMenuItem, "%T", sub.name, iClient);
+        } else {
+            FormatEx(szMenuItem, sizeof szMenuItem, "%s", sub.name);
+        }
 
-	if (hResult != SMCError_Okay)
-	{
-		char sError[128];
-		SMC_GetErrorString(hResult, sError, sizeof(sError));
-		LogError("%s on line %d, col %d of %s", sError, iLine, iColumn, sPath);
-	}
+        menu.AddItem(szMenuIndex, szMenuItem);
+    }
 
-	return (hResult == SMCError_Okay);
+    menu.Display(iClient, MENU_TIME_FOREVER);
 }
 
-public SMCResult Parser_EnterSection(SMCParser smc, const char[] sSection, bool opt_quotes)
+int HandlerWeaponMenu(Menu menu, MenuAction action, int iClient, int iItem)
 {
-	if (StrEqual(sSection, "Weapons")) {
-		g_tConfigSection = ConfigSection_Weapons;
-	}
+    switch (action)
+    {
+        case MenuAction_End: delete menu;
 
-	else if (g_tConfigSection == ConfigSection_Weapons)
-	{
-		g_tConfigSection = ConfigSection_Weapon;
-		strcopy(g_sConfigSection, sizeof(g_sConfigSection), sSection);
-	}
+        case MenuAction_Select:
+        {
+            char szMenuIndex[4];
+            menu.GetItem(iItem, szMenuIndex, sizeof szMenuIndex);
 
-	return SMCParse_Continue;
+            int iMenuIndex = StringToInt(szMenuIndex);
+
+            MenuElement sub;
+            g_eClientActiveCategory[iClient].children.GetArray(iMenuIndex, sub);
+
+            if (sub.IsCategory())
+            {
+                g_eClientActiveCategory[iClient] = sub;
+                ShowWeaponMenu(iClient, sub);
+                return 0;
+            }
+
+            if (!CanPickupWeapon(iClient))
+            {
+                ShowWeaponMenu(iClient, g_eClientActiveCategory[iClient]);
+                return 0;
+            }
+
+            StartVote(iClient, sub.name);
+        }
+    }
+
+    return 0;
 }
 
-public SMCResult Parser_KeyValue(SMCParser smc,
-									const char[] sKey,
-									const char[] sValue,
-									bool key_quotes,
-									bool value_quotes)
+bool CanPickupWeapon(int iClient)
 {
-	if (g_tConfigSection != ConfigSection_Weapon) {
-		return SMCParse_Continue;
-	}
+    if (g_bRoundIsLive)
+    {
+        CPrintToChat(iClient, "%T%T", "TAG", iClient, "ROUND_LIVE", iClient);
+        return false;
+    }
 
-	if (StrEqual(sKey, "cmd")) {
-		SetTrieString(g_hWeapons, sValue, g_sConfigSection);
-	}
+    if (!IsClientSurvivor(iClient) || !IsPlayerAlive(iClient))
+    {
+        CPrintToChat(iClient, "%T%T", "TAG", iClient, "ONLY_ALIVE_SURVIVOR", iClient);
+        return false;
+    }
 
-	return SMCParse_Continue;
+    return true;
 }
 
-public SMCResult Parser_LeaveSection(SMCParser smc)
+void FillWeaponSlots(Handle hWeaponSlot)
 {
-	if (g_tConfigSection == ConfigSection_Weapon) {
-		g_tConfigSection = ConfigSection_Weapons;
-	}
-
-	return SMCParse_Continue;
+    SetTrieValue(hWeaponSlot, "weapon_smg",              SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_pumpshotgun",      SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_autoshotgun",      SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_rifle",            SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_hunting_rifle",    SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_smg_silenced",     SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_shotgun_chrome",   SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_rifle_desert",     SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_sniper_military",  SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_shotgun_spas",     SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_grenade_launcher", SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_rifle_ak47",       SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_smg_mp5",          SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_rifle_sg552",      SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_sniper_awp",       SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_sniper_scout",     SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_rifle_m60",        SLOT_PRIMARY);
+    SetTrieValue(hWeaponSlot, "weapon_melee",            SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "weapon_chainsaw",         SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "weapon_pistol",           SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "weapon_pistol_magnum",    SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "baseball_bat",            SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "cricket_bat",             SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "crowbar",                 SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "electric_guitar",         SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "fireaxe",                 SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "frying_pan",              SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "golfclub",                SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "katana",                  SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "knife",                   SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "machete",                 SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "pitchfork",               SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "shovel",                  SLOT_SECONDARY);
+    SetTrieValue(hWeaponSlot, "tonfa",                   SLOT_SECONDARY);
 }
 
-bool IsValidClient(int iClient) {
-	return (iClient > 0 && iClient <= MaxClients);
+int PickupWeapon(int iClient, const char[] szWeaponName)
+{
+    int iSlot = 0;
+
+    if (!GetTrieValue(g_hWeaponSlots, szWeaponName, iSlot)) {
+        return -1;
+    }
+
+    int iEntOldWeapon = GetPlayerWeaponSlot(iClient, iSlot);
+
+    if (iEntOldWeapon != -1) {
+        RemovePlayerItem(iClient, iEntOldWeapon);
+    }
+
+    return GivePlayerItem(iClient, szWeaponName);
+}
+
+ArrayList BuildMenu(char[] szPath)
+{
+    if (!FileExists(szPath)) {
+        SetFailState("Couldn't load %s", szPath);
+    }
+
+    KeyValues kv = CreateKeyValues("Weapons");
+
+    if (!kv.ImportFromFile(szPath)) {
+        SetFailState("Failed to parse keyvalues for %s", szPath);
+    }
+
+    ArrayList hierarchy = BuildHierarchy(kv);
+    ArrayList root = new ArrayList(sizeof MenuElement);
+
+    NodeItem node;
+    MenuElement menu;
+    for (int iIdx = 0; iIdx < hierarchy.Length; iIdx++)
+    {
+        hierarchy.GetArray(iIdx, node, sizeof NodeItem);
+        ParseNodeToMenuElement(node, menu);
+        root.PushArray(menu);
+    }
+
+    delete hierarchy;
+    delete kv;
+
+    return root;
+}
+
+/**
+ * Recursively constructs a tree of NodeItem structs from a KeyValues object.
+ *
+ * This function traverses all immediate subkeys of the current KeyValues position,
+ * creating a NodeItem for each key. Each node stores its name, value, and a list
+ * of child nodes built recursively from its own subkeys.
+ *
+ * @param kv         The KeyValues object to read from. Assumes current position is valid.
+ * @return           An ArrayList containing NodeItem structs representing the hierarchy.
+ *                   Each NodeItem owns its own children list.
+ */
+ArrayList BuildHierarchy(KeyValues kv)
+{
+    // Create a new list to hold nodes at the current level
+    ArrayList nodes = new ArrayList(sizeof NodeItem);
+
+    // Attempt to enter the first child key (includes both sections and leaf nodes)
+    if (!KvGotoFirstSubKey(kv, false)) {
+        return nodes; // No children — return empty list
+    }
+
+    char szKey[MAXLENGTH_NODE_KEY];
+    char szValue[MAXLENGTH_NODE_VALUE];
+
+    do
+    {
+        KvGetSectionName(kv, szKey, sizeof szKey);
+
+        NodeItem node;
+        strcopy(node.key, sizeof node.key, szKey);
+
+        if (KvGotoFirstSubKey(kv, false)) // Section
+        {
+            KvGoBack(kv);
+            node.value[0] = '\0';
+            node.children = BuildHierarchy(kv);
+        }
+        else // Leaf
+        {
+            KvGetString(kv, NULL_STRING, szValue, sizeof szValue);
+            strcopy(node.value, sizeof node.value, szValue);
+            node.children = null;
+        }
+
+        nodes.PushArray(node);
+
+    } while (KvGotoNextKey(kv, false));
+
+    // Return to parent level after traversal
+    KvGoBack(kv);
+    return nodes;
+}
+
+void PushMenuElementToCache(StringMap cache, ArrayList elements)
+{
+    int iArraySize = elements.Length;
+
+    for (int iIdx = 0; iIdx < iArraySize; iIdx++)
+    {
+        MenuElement element;
+        elements.GetArray(iIdx, element, sizeof element);
+
+        if (element.children != null && element.children.Length > 0) {
+            PushMenuElementToCache(cache, element.children);
+        }
+
+        cache.SetArray(element.cmd, element, sizeof element);
+    }
+}
+
+void ParseNodeToMenuElement(const NodeItem node, MenuElement out)
+{
+    NodeItem child;
+
+    if (StrEqual(node.key, "category"))
+    {
+        out.Create(Element_Category);
+
+        for (int iIdx = 0; iIdx < node.children.Length; iIdx++)
+        {
+            node.children.GetArray(iIdx, child, sizeof NodeItem);
+
+            if (StrEqual(child.key, "name", false))
+                strcopy(out.name, sizeof out.name, child.value);
+            else if (StrEqual(child.key, "cmd", false))
+                strcopy(out.cmd, sizeof out.cmd, child.value);
+        }
+
+        for (int iIdx = 0; iIdx < node.children.Length; iIdx++)
+        {
+            node.children.GetArray(iIdx, child, sizeof NodeItem);
+
+            if (StrEqual(child.key, "items", false))
+            {
+                for (int j = 0; j < child.children.Length; j++)
+                {
+                    NodeItem subChild;
+                    child.children.GetArray(j, subChild, sizeof NodeItem);
+
+                    MenuElement sub;
+                    ParseNodeToMenuElement(subChild, sub);
+                    out.AddChild(sub);
+                }
+            }
+        }
+    }
+    else if (StrEqual(node.key, "item", false))
+    {
+        out.Create(Element_Item);
+
+        for (int iIdx = 0; iIdx < node.children.Length; iIdx++)
+        {
+            node.children.GetArray(iIdx, child, sizeof NodeItem);
+
+            if (StrEqual(child.key, "name", false))
+                strcopy(out.name, sizeof out.name, child.value);
+            else if (StrEqual(child.key, "cmd", false))
+                strcopy(out.cmd, sizeof out.cmd, child.value);
+        }
+    }
 }
 
 bool IsClientSurvivor(int iClient) {
-	return (GetClientTeam(iClient) == TEAM_SURVIVOR);
+    return (GetClientTeam(iClient) == TEAM_SURVIVOR);
 }
 
 bool IsClientInfected(int iClient) {
-	return (GetClientTeam(iClient) == TEAM_INFECTED);
+    return (GetClientTeam(iClient) == TEAM_INFECTED);
 }

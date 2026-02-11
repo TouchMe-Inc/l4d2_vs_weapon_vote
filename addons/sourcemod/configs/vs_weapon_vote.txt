@@ -1,8 +1,16 @@
 "Weapons"
 {
-	"weapon_sniper_scout"
+	"category"
 	{
-		"cmd" "sm_scout"
-		"cmd" "sm_sniper"
+		"name" "MENU_T1"
+		"cmd" "t1v"
+		 "items"
+		{
+			"item"
+			{
+				"name" "weapon_sniper_scout"
+				"cmd" "sm_scout"
+			}
+		}
 	}
 }

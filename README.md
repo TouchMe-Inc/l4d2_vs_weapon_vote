@@ -2,30 +2,14 @@
 The plugin adds the ability to get weapons by voting.
 
 ## Commands
-`!<weapon>` - get "weapon" (!scout).
+- `!w` - show main menu.
+- `!<menu>` - show "menu".
+- `!<weapon>` - get "weapon" (!smg, !pump).
 
-## How to add weapons?
-To add a weapon to the list, edit the `config/vs_weapon_vote.txt` file. 
-
-Example:
-```
-"Weapons"
-{
-	"weapon_sniper_scout"
-	{
-		"cmd" "sm_scout"
-		"cmd" "sm_sniper"
-	}
-
-  	"weapon_smg"
-	{
-		"cmd" "sm_uzi"
-	}
-}
-```
+## ConVars
+| ConVar               | Value                                         | Description       |
+| -------------------- | --------------------------------------------- | ----------------- |
+| sm_wv_path_to_cfg    | "addons/sourcemod/configs/vs_weapon_vote.txt" |                   |
 
 ## Require
 [NativeVotesRework](https://github.com/TouchMe-Inc/l4d2_nativevotes_rework)
-
-## Support
-ReadyUp

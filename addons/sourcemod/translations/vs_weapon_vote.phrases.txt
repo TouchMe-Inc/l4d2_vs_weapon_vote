@@ -1,202 +1,216 @@
 "Phrases"
 {
-	"TAG"
-	{
-		"en"			"<{green}Weapon Vote{default}> "
-	}
+    "TAG"
+    {
+        "en"			"<{green}Weapon Vote{default}> "
+    }
 
-	"ONLY_ALIVE_SURVIVOR"
-	{
-		"en"			"Only alive {blue}survivors{default} can get weapons"
-	}
+    "ONLY_ALIVE_SURVIVOR"
+    {
+        "en"			"Only alive {blue}survivors{default} can get weapons"
+    }
 
-	"LEFT_READYUP"
-	{
-		"en"			"Vote didnot pass before you left ready-up"
-	}
+    "ROUND_LIVE"
+    {
+        "en"			"The round has already begun"
+    }
 
-	"VOTE_COULDOWN"
-	{
-		"#format"		"{1:d}"
-		"en"			"A vote cannot be called at this moment, try again in a {olive}{1} second"
-	}
+    "MENU_MAIN"
+    {
+        "en"			"Choose weapon:\n "
+    }
 
-	"ROUND_LIVE"
-	{
-		"en"			"The round has already begun"
-	}
-	
-	"VOTE_START"
-	{
-		"#format"		"{1:N},{2:s}"
-		"en"			"{blue}{1}{default} started voting for {olive}{2}"
-	}
+    "MENU_MELEE"
+    {
+        "en"			"Melee"
+    }
 
-	"VOTE_TITLE"
-	{
-		"#format"		"{1:N},{2:s}"
-		"en"			"{1} get {2}"
-	}
+    "MENU_T1"
+    {
+        "en"			"Tier 1"
+    }
 
-	"VOTE_PASS"
-	{
-		"#format"		"{1:N},{2:s}"
-		"en"			"{blue}{1}{default} set {olive}{2}"
-	}
+    "MENU_T2"
+    {
+        "en"			"Tier 2"
+    }
 
-	"VOTE_FAIL"
-	{
-		"#format"		"{1:N},{2:s}"
-		"en"			"{blue}{1}{default} not received {olive}{2}"
-	}
+    "MENU_T3"
+    {
+        "en"			"Tier 3"
+    }
 
-	"baseball_bat"
-	{
-		"en"			"Baseball Bat"
-	}
+    "baseball_bat"
+    {
+        "en"			"Baseball Bat"
+    }
 
-	"cricket_bat"
-	{
-		"en"			"Cricket Bat"
-	}
+    "cricket_bat"
+    {
+        "en"			"Cricket Bat"
+    }
 
-	"crowbar"
-	{
-		"en"			"Crowbar"
-	}
+    "crowbar"
+    {
+        "en"			"Crowbar"
+    }
 
-	"electric_guitar"
-	{
-		"en"			"Guitar"
-	}
+    "electric_guitar"
+    {
+        "en"			"Guitar"
+    }
 
-	"frying_pan"
-	{
-		"en"			"Frying Pan"
-	}
+    "frying_pan"
+    {
+        "en"			"Frying Pan"
+    }
 
-	"golfclub"
-	{
-		"en"			"Golf Club"
-	}
+    "golfclub"
+    {
+        "en"			"Golf Club"
+    }
 
-	"knife"
-	{
-		"en"			"Knife"
-	}
+    "knife"
+    {
+        "en"			"Knife"
+    }
 
-	"shovel"
-	{
-		"en"			"Shovel"
-	}
+    "shovel"
+    {
+        "en"			"Shovel"
+    }
 
-	"pitchfork"
-	{
-		"en"			"Pitchfork"
-	}
+    "pitchfork"
+    {
+        "en"			"Pitchfork"
+    }
 
-	"tonfa"
-	{
-		"en"			"Tonfa"
-	}
+    "tonfa"
+    {
+        "en"			"Tonfa"
+    }
 
-	"katana"
-	{
-		"en"			"Katana"
-	}
+    "katana"
+    {
+        "en"			"Katana"
+    }
 
-	"fireaxe"
-	{
-		"en"			"Axe"
-	}
+    "fireaxe"
+    {
+        "en"			"Axe"
+    }
 
-	"machete"
-	{
-		"en"			"Machete"
-	}
+    "machete"
+    {
+        "en"			"Machete"
+    }
 
-	"weapon_smg"
-	{
-		"en"			"Smg"
-	}
+    "weapon_smg"
+    {
+        "en"			"Smg"
+    }
 
-	"weapon_smg_silenced"
-	{
-		"en"			"Smg (Silenced)"
-	}
+    "weapon_smg_silenced"
+    {
+        "en"			"Smg (Silenced)"
+    }
 
-	"weapon_smg_mp5"
-	{
-		"en"			"MP5"
-	}
+    "weapon_smg_mp5"
+    {
+        "en"			"MP5"
+    }
 
-	"weapon_pumpshotgun"
-	{
-		"en"			"Pump"
-	}
+    "weapon_pumpshotgun"
+    {
+        "en"			"Pump"
+    }
 
-	"weapon_shotgun_chrome"
-	{
-		"en"			"Chrome"
-	}
+    "weapon_shotgun_chrome"
+    {
+        "en"			"Chrome"
+    }
 
-	"weapon_sniper_scout"
-	{
-		"en"			"Scout"
-	}
+    "weapon_sniper_scout"
+    {
+        "en"			"Scout"
+    }
 
-	"weapon_autoshotgun"
-	{
-		"en"			"Autoshotgun"
-	}
+    "weapon_autoshotgun"
+    {
+        "en"			"Autoshotgun"
+    }
 
-	"weapon_shotgun_spas"
-	{
-		"en"			"Spas"
-	}
+    "weapon_shotgun_spas"
+    {
+        "en"			"SPAS-12"
+    }
 
-	"weapon_hunting_rifle"
-	{
-		"en"			"Hunting"
-	}
+    "weapon_hunting_rifle"
+    {
+        "en"			"Hunting"
+    }
 
-	"weapon_sniper_military"
-	{
-		"en"			"Military"
-	}
+    "weapon_sniper_military"
+    {
+        "en"			"Military"
+    }
 
-	"weapon_rifle"
-	{
-		"en"			"M16"
-	}
+    "weapon_rifle"
+    {
+        "en"			"M16"
+    }
 
-	"weapon_rifle_desert"
-	{
-		"en"			"Scar"
-	}
+    "weapon_rifle_desert"
+    {
+        "en"			"Scar"
+    }
 
-	"weapon_rifle_ak47"
-	{
-		"en"			"AK47"
-	}
+    "weapon_rifle_ak47"
+    {
+        "en"			"AK47"
+    }
 
-	"weapon_rifle_sg552"
-	{
-		"en"			"SG552"
-	}
+    "weapon_rifle_sg552"
+    {
+        "en"			"SG552"
+    }
 
-	"weapon_sniper_awp"
-	{
-		"en"			"AWP"
-	}
+    "weapon_sniper_awp"
+    {
+        "en"			"AWP"
+    }
 
-	"weapon_grenade_launcher"
-	{
-		"en"			"Grenade Launcher"
-	}
+    "weapon_grenade_launcher"
+    {
+        "en"			"Grenade Launcher"
+    }
 
-	"weapon_rifle_m60"
-	{
-		"en"			"M60"
-	}
+    "weapon_rifle_m60"
+    {
+        "en"			"M60"
+    }
+
+    "VOTE_START"
+    {
+        "#format"		"{1:N},{2:s}"
+        "en"			"{blue}{1}{default} started voting for {olive}{2}"
+    }
+
+    "VOTE_TITLE"
+    {
+        "#format"		"{1:N},{2:s}"
+        "en"			"{1} get {2}"
+    }
+
+    "VOTE_PASS"
+    {
+        "#format"		"{1:N},{2:s}"
+        "en"			"{blue}{1}{default} set {olive}{2}"
+    }
+
+    "VOTE_FAIL"
+    {
+        "#format"		"{1:N},{2:s}"
+        "en"			"{blue}{1}{default} not received {olive}{2}"
+    }
 }

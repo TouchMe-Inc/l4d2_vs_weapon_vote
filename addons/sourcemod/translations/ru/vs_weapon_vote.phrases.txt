@@ -1,198 +1,216 @@
 "Phrases"
 {
+	"TAG"
+	{
+		"ru"			"<{green}Weapon Vote{default}> "
+	}
+
 	"ONLY_ALIVE_SURVIVOR"
 	{
-		"ru"			"Команда доступна только для живых {blue}выживших"
-	}
-
-	"LEFT_READYUP"
-	{
-		"ru"			"Доступно {olive}только во время ReadyUp"
-	}
-
-	"VOTE_COULDOWN"
-	{
-		"#format"		"{1:d}"
-		"ru"			"Сейчас голосование недоступно. Подождите {olive}{1} сек"
+		"ru"			"Только живые игроки из команды {blue}выживших{default} могут взять оружие"
 	}
 
 	"ROUND_LIVE"
 	{
-		"ru"			"Раунд уже начался"
+		"ru"			"Раунд уже начался!"
 	}
 
-	"VOTE_START"
+	"MENU_MAIN"
 	{
-		"#format"		"{1:N},{2:s}"
-		"ru"			"{blue}{1}{default} начал голосование за получение {olive}{2}"
+		"ru"			"Выберите оружие: \n"
 	}
 
-	"VOTE_TITLE"
+	"MENU_MELEE"
 	{
-		"#format"		"{1:N},{2:s}"
-		"ru"			"{1} хочет получить {2}"
+		"ru"			"Рукопашное"
 	}
 
-	"VOTE_PASS"
+	"MENU_T1"
 	{
-		"#format"		"{1:N},{2:s}"
-		"ru"			"{blue}{1}{default} получил {olive}{2}"
+		"ru"			"Tier 1"
 	}
-	
-	"VOTE_FAIL"
+
+	"MENU_T2"
 	{
-		"#format"		"{1:N},{2:s}"
-		"en"			"{blue}{1}{default} не получил {olive}{2}"
+		"ru"			"Tier 2"
+	}
+
+	"MENU_T3"
+	{
+		"ru"			"Tier 3"
 	}
 
 	"baseball_bat"
 	{
-		"en"			"Бейсбольная бита"
+		"ru"			"Бейсбольная бита"
 	}
 
 	"cricket_bat"
 	{
-		"en"			"Бита для крикета"
+		"ru"			"Крикетная бита"
 	}
 
 	"crowbar"
 	{
-		"en"			"Лом"
+		"ru"			"Лом"
 	}
 
 	"electric_guitar"
 	{
-		"en"			"Гитара"
+		"ru"			"Гитара"
 	}
 
 	"frying_pan"
 	{
-		"en"			"Сковородка"
+		"ru"			"Сковорода"
 	}
 
 	"golfclub"
 	{
-		"en"			"Клюшка"
+		"ru"			"Клюшка"
 	}
 
 	"knife"
 	{
-		"en"			"Нож"
+		"ru"			"Нож"
 	}
 
 	"shovel"
 	{
-		"en"			"Лопата"
+		"ru"			"Лопата"
 	}
 
 	"pitchfork"
 	{
-		"en"			"Вилы"
+		"ru"			"Вилы"
 	}
 
 	"tonfa"
 	{
-		"en"			"Tonfa"
+		"ru"			"Тонфа"
 	}
 
 	"katana"
 	{
-		"en"			"Катана"
+		"ru"			"Катана"
 	}
 
 	"fireaxe"
 	{
-		"en"			"Топор"
+		"ru"			"Топор"
 	}
 
 	"machete"
 	{
-		"en"			"Мачете"
+		"ru"			"Мачете"
 	}
 
 	"weapon_smg"
 	{
-		"en"			"Smg"
+		"ru"			"Smg"
 	}
 
 	"weapon_smg_silenced"
 	{
-		"en"			"Smg (Silenced)"
+		"ru"			"Smg (Silenced)"
 	}
 
 	"weapon_smg_mp5"
 	{
-		"en"			"MP5"
+		"ru"			"MP5"
 	}
 
 	"weapon_pumpshotgun"
 	{
-		"en"			"Pump"
+		"ru"			"Pump"
 	}
 
 	"weapon_shotgun_chrome"
 	{
-		"en"			"Chrome"
+		"ru"			"Chrome"
 	}
 
 	"weapon_sniper_scout"
 	{
-		"en"			"Scout"
+		"ru"			"Scout"
 	}
 
 	"weapon_autoshotgun"
 	{
-		"en"			"Autoshotgun"
+		"ru"			"Autoshotgun"
 	}
 
 	"weapon_shotgun_spas"
 	{
-		"en"			"Spas"
+		"ru"			"SPAS-12"
 	}
 
 	"weapon_hunting_rifle"
 	{
-		"en"			"Hunting"
+		"ru"			"Hunting"
 	}
 
 	"weapon_sniper_military"
 	{
-		"en"			"Military"
+		"ru"			"Military"
 	}
 
 	"weapon_rifle"
 	{
-		"en"			"M16"
+		"ru"			"M16"
 	}
 
 	"weapon_rifle_desert"
 	{
-		"en"			"Scar"
+		"ru"			"Scar"
 	}
 
 	"weapon_rifle_ak47"
 	{
-		"en"			"AK47"
+		"ru"			"AK47"
 	}
 
 	"weapon_rifle_sg552"
 	{
-		"en"			"SG552"
+		"ru"			"SG552"
 	}
 
 	"weapon_sniper_awp"
 	{
-		"en"			"AWP"
+		"ru"			"AWP"
 	}
 
 	"weapon_grenade_launcher"
 	{
-		"en"			"Grenade Launcher"
+		"ru"			"Grenade Launcher"
 	}
 
 	"weapon_rifle_m60"
 	{
-		"en"			"M60"
+		"ru"			"M60"
 	}
-}
 
+	"VOTE_START"
+    {
+        "#format"		"{1:N},{2:s}"
+        "ru"			"{blue}{1}{default} начал голосование за {olive}{2}"
+    }
+
+    "VOTE_TITLE"
+    {
+        "#format"		"{1:N},{2:s}"
+        "ru"			"{1} хочет получить {2}"
+    }
+
+    "VOTE_PASS"
+    {
+        "#format"		"{1:N},{2:s}"
+        "ru"			"{blue}{1}{default} получил {olive}{2}"
+    }
+
+    "VOTE_FAIL"
+    {
+        "#format"		"{1:N},{2:s}"
+        "ru"			"{blue}{1}{default} не получил {olive}{2}"
+    }
+}
